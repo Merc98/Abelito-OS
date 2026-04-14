@@ -3,18 +3,16 @@ from __future__ import annotations
 import asyncio
 import os
 
-from nats.aio.client import Client as NATS
-
 from apps.osint_orchestrator.pipeline import run_osint
 from core.memory import MemoryCore
+from shared.nats_client import connect_nats_from_env
 from shared.schemas import OsintReport, OsintRequest, TaskEnvelope
 
 
 async def run() -> None:
     memory = MemoryCore(os.getenv("MEMORY_DB_PATH", "./data/abel_memory.db"))
 
-    nc = NATS()
-    await nc.connect(os.getenv("NATS_URL", "nats://nats:4222"))
+    nc = await connect_nats_from_env(os.getenv("NATS_URL", "nats://nats:4222"))
 
     async def handle_task(msg) -> None:  # type: ignore[no-untyped-def]
         task = TaskEnvelope.model_validate_json(msg.data.decode("utf-8"))
@@ -22,7 +20,7 @@ async def run() -> None:
 
         try:
             req = OsintRequest.model_validate(task.payload)
-            report = await run_osint(req)
+            report = await run_osint(req, workflow_id=task.workflow_id)
             if report.status == "REJECTED_POLICY":
                 memory.record_failure(
                     task.workflow_id,

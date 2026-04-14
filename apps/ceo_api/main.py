@@ -8,6 +8,7 @@ from fastapi import FastAPI, HTTPException
 from nats.aio.client import Client as NATS
 
 from core.memory import MemoryCore
+from shared.nats_client import connect_nats_from_env
 from shared.schemas import CEOMessage, OsintRequest, TaskEnvelope, WorkflowResponse
 
 app = FastAPI(title="Abel OS+ CEO API", version="3.3.0")
@@ -19,8 +20,7 @@ _memory: MemoryCore | None = None
 @app.on_event("startup")
 async def startup() -> None:
     global _nats, _memory
-    _nats = NATS()
-    await _nats.connect(os.getenv("NATS_URL", "nats://nats:4222"))
+    _nats = await connect_nats_from_env(os.getenv("NATS_URL", "nats://nats:4222"))
     _memory = MemoryCore(os.getenv("MEMORY_DB_PATH", "./data/abel_memory.db"))
 
 
