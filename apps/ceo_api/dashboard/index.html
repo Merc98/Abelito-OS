@@ -1,0 +1,129 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Abel OS+ Dashboard</title>
+  <style>
+    :root { color-scheme: dark; }
+    body {
+      margin: 0;
+      font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+      background: radial-gradient(circle at top, #1f2a44 0%, #0d1117 55%);
+      color: #e6edf3;
+      font-size: 16px;
+    }
+    .wrap { max-width: 960px; margin: 0 auto; padding: 24px; }
+    .card {
+      background: rgba(17, 24, 39, 0.75);
+      border: 1px solid rgba(99, 102, 241, 0.45);
+      border-radius: 14px;
+      padding: 16px;
+      margin-bottom: 16px;
+      box-shadow: 0 0 24px rgba(99, 102, 241, 0.15);
+    }
+    h1 { margin: 0 0 6px; font-weight: 700; font-size: 1.7rem; }
+    .sub { opacity: 0.75; margin-top: 0; }
+    .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; }
+    button {
+      background: #6366f1; border: 0; color: #fff; border-radius: 10px;
+      padding: 10px 14px; cursor: pointer; font-weight: 600; font-size: 0.98rem;
+    }
+    input, select {
+      width: 100%; box-sizing: border-box; background: #0b1220; color: #e6edf3;
+      border: 1px solid #334155; border-radius: 8px; padding: 10px;
+    }
+    pre {
+      background: #0b1220; border-radius: 10px; padding: 12px; overflow: auto;
+      border: 1px solid #23304a; min-height: 120px;
+    }
+    .pill { display:inline-block; padding:4px 10px; border-radius:999px; font-size:12px; background:#1f2937; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="card">
+      <h1>Abel OS+ · Panel simple</h1>
+      <p class="sub">Todo en una pantalla: ver estado, lanzar búsqueda y revisar memoria.</p>
+      <div class="grid">
+        <div><span class="pill">Estado de la API</span><h2 id="health">...</h2></div>
+        <div><span class="pill">Canales</span><h2 id="lanes">...</h2></div>
+      </div>
+      <button id="refresh">Actualizar estado</button>
+    </div>
+
+    <div class="card">
+      <h3>Iniciar búsqueda OSINT</h3>
+      <div class="grid">
+        <input id="target" placeholder="Objetivo (ej: jane.doe@example.com)" />
+        <select id="targetType">
+          <option>email</option><option>username</option><option>domain</option>
+          <option>phone</option><option>plate</option><option>image</option>
+        </select>
+        <input id="purpose" placeholder="Motivo de búsqueda" value="due_diligence_vendor" />
+        <input id="legal" placeholder="Base legal o consentimiento" value="contractual_due_diligence" />
+      </div>
+      <button id="start">Iniciar proceso</button>
+      <pre id="startOut"></pre>
+    </div>
+
+    <div class="card">
+      <h3>Ver memoria del proceso</h3>
+      <input id="workflowId" placeholder="ID del proceso (workflow_id)" />
+      <button id="loadMem">Cargar memoria</button>
+      <pre id="memoryOut"></pre>
+    </div>
+  </div>
+
+  <script>
+    async function j(url, options) {
+      const r = await fetch(url, options);
+      const data = await r.json();
+      if (!r.ok) throw new Error(JSON.stringify(data));
+      return data;
+    }
+    async function refresh() {
+      try {
+        const health = await j('/health');
+        const lanes = await j('/v1/lanes');
+        document.getElementById('health').textContent = health.status;
+        document.getElementById('lanes').textContent = Object.keys(lanes).length + ' lanes';
+      } catch (e) {
+        document.getElementById('health').textContent = 'error';
+      }
+    }
+    document.getElementById('refresh').onclick = refresh;
+    document.getElementById('start').onclick = async () => {
+      const payload = {
+        target: document.getElementById('target').value.trim(),
+        target_type: document.getElementById('targetType').value,
+        purpose: document.getElementById('purpose').value.trim(),
+        consent_or_legal_basis: document.getElementById('legal').value.trim(),
+        mode: 'RECOMMEND_ONLY'
+      };
+      try {
+        const out = await j('/v1/osint/start', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        document.getElementById('startOut').textContent = JSON.stringify(out, null, 2);
+        document.getElementById('workflowId').value = out.workflow_id;
+      } catch (e) {
+        document.getElementById('startOut').textContent = String(e);
+      }
+    };
+    document.getElementById('loadMem').onclick = async () => {
+      const wf = document.getElementById('workflowId').value.trim();
+      if (!wf) return;
+      try {
+        const out = await j('/v1/memory/' + encodeURIComponent(wf));
+        document.getElementById('memoryOut').textContent = JSON.stringify(out, null, 2);
+      } catch (e) {
+        document.getElementById('memoryOut').textContent = String(e);
+      }
+    };
+    refresh();
+  </script>
+</body>
+</html>
