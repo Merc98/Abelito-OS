@@ -61,6 +61,6 @@ make verify-all
 
 - Dashboard web: abre `http://localhost:8080/dashboard`.
 - APK Android (WebView minimal):
-  1. Configura `ANDROID_HOME` o `ANDROID_SDK_ROOT`.
-  2. Ejecuta `make apk`.
+  1. Ejecuta `make apk`.
+  2. Si no existe SDK, el script bootstrappea `cmdline-tools` + `platforms;android-34` + `build-tools;34.0.0` en `./.android-sdk`.
   3. APK esperada: `mobile/android-dashboard/app/build/outputs/apk/debug/app-debug.apk`.
