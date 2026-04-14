@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>ABEL OS+ Mobile</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg: #000000;
+            --accent: #7c4dff;
+            --text: #ffffff;
+            --surface: rgba(255, 255, 255, 0.05);
+        }
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            margin: 0;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            padding-top: env(safe-area-inset-top);
+        }
+        .header {
+            padding: 20px;
+            font-size: 20px;
+            font-weight: 600;
+            text-align: center;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+        .chat {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+        .msg {
+            max-width: 85%;
+            padding: 15px;
+            border-radius: 18px;
+            font-size: 14px;
+        }
+        .bot { background: var(--surface); align-self: flex-start; }
+        .user { background: var(--accent); align-self: flex-end; }
+        .input-area {
+            padding: 20px;
+            padding-bottom: calc(20px + env(safe-area-inset-bottom));
+            background: rgba(0,0,0,0.8);
+            border-top: 1px solid rgba(255,255,255,0.1);
+            display: flex;
+            gap: 10px;
+        }
+        input {
+            flex: 1;
+            background: var(--surface);
+            border: none;
+            color: #fff;
+            padding: 12px 20px;
+            border-radius: 25px;
+            outline: none;
+        }
+        button {
+            background: var(--accent);
+            border: none;
+            color: #fff;
+            width: 45px;
+            height: 45px;
+            border-radius: 50%;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">ABEL OS+</div>
+    <div class="chat" id="chat">
+        <div class="msg bot">System Initialized. Mobile interface online.</div>
+    </div>
+    <div class="input-area">
+        <input type="text" id="input" placeholder="Type a command...">
+        <button onclick="send()">></button>
+    </div>
+    <script>
+        const chat = document.getElementById('chat');
+        const input = document.getElementById('input');
+        
+        async function send() {
+            const val = input.value;
+            if(!val) return;
+            addMsg(val, 'user');
+            input.value = '';
+            
+            // Mobile talks to the same CEO API (likely public URL in production)
+            try {
+                const res = await fetch(`http://localhost:8000/skills/execute`, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({skill: 'web_search', action: 'search', params: {query: val}})
+                });
+                const data = await res.json();
+                addMsg(data.summary || "Action Complete.", 'bot');
+            } catch(e) {
+                addMsg("Error: CEO API offline.", 'bot');
+            }
+        }
+
+        function addMsg(txt, side) {
+            const d = document.createElement('div');
+            d.className = `msg ${side}`;
+            d.innerText = txt;
+            chat.appendChild(d);
+            chat.scrollTop = chat.scrollHeight;
+        }
+    </script>
+</body>
+</html>
