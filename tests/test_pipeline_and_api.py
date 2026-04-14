@@ -69,6 +69,10 @@ class TestPipelineAndAPI(unittest.IsolatedAsyncioTestCase):
         assert ceo_api._nats is not None
         self.assertEqual(ceo_api._nats.messages[0][0], "abel.tasks.short.ceo.classify")
 
+    async def test_dashboard_file_is_available(self) -> None:
+        response = await ceo_api.dashboard()
+        self.assertTrue(str(response.path).endswith("apps/ceo_api/dashboard/index.html"))
+
 
 if __name__ == "__main__":
     unittest.main()

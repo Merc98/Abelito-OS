@@ -2,9 +2,11 @@ from __future__ import annotations
 
 import os
 import uuid
+from pathlib import Path
 from typing import Any
 
 from fastapi import FastAPI, HTTPException
+from fastapi.responses import FileResponse
 from nats.aio.client import Client as NATS
 
 from core.memory import MemoryCore
@@ -12,6 +14,7 @@ from shared.nats_client import connect_nats_from_env
 from shared.schemas import CEOMessage, OsintRequest, TaskEnvelope, WorkflowResponse
 
 app = FastAPI(title="Abel OS+ CEO API", version="3.3.0")
+DASHBOARD_HTML = Path(__file__).resolve().parent / "dashboard" / "index.html"
 
 _nats: NATS | None = None
 _memory: MemoryCore | None = None
@@ -33,6 +36,13 @@ async def shutdown() -> None:
 @app.get("/health")
 async def health() -> dict[str, str]:
     return {"status": "ok", "service": "ceo-api"}
+
+
+@app.get("/dashboard")
+async def dashboard() -> FileResponse:
+    if not DASHBOARD_HTML.exists():
+        raise HTTPException(status_code=404, detail="dashboard unavailable")
+    return FileResponse(DASHBOARD_HTML)
 
 
 @app.post("/v1/message", response_model=WorkflowResponse)

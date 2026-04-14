@@ -1,4 +1,4 @@
-.PHONY: up down logs smoke smoke-osint selfcheck simulate test layer2 layer3 verify-all
+.PHONY: up down logs smoke smoke-osint selfcheck simulate test layer2 layer3 verify-all release apk
 
 up:
 	docker compose up --build -d
@@ -34,3 +34,9 @@ layer2: selfcheck test
 layer3: simulate
 
 verify-all: layer2 layer3
+
+release: verify-all
+	./scripts/release_bundle.sh v1.0.0
+
+apk:
+	./scripts/build_android_apk.sh
