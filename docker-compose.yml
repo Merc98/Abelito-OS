@@ -1,6 +1,6 @@
 services:
   nats:
-    image: nats:2.11-alpine
+    image: nats:2.10-alpine
     command: ["-js"]
     ports:
       - "4222:4222"
@@ -28,6 +28,32 @@ services:
       ES_JAVA_OPTS: -Xms512m -Xmx512m
     ports:
       - "9200:9200"
+
+  qdrant:
+    image: qdrant/qdrant:v1.10.1
+    ports:
+      - "6333:6333"
+
+  minio:
+    image: minio/minio:latest
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: abel
+      MINIO_ROOT_PASSWORD: abelminio123
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+
+  abel-core:
+    build: .
+    command: uvicorn abel_os.main:app --host 0.0.0.0 --port 8080
+    ports:
+      - "8080:8080"
+    environment:
+      ABEL_ENVIRONMENT: dev
+      ABEL_MOBILE_MODE: RECOMMEND_ONLY
+    depends_on:
+      - redis
 
   ceo-api:
     build:

@@ -3,14 +3,12 @@ from __future__ import annotations
 import asyncio
 import os
 
-from nats.aio.client import Client as NATS
-
+from shared.nats_client import connect_nats_from_env
 from shared.schemas import TaskEnvelope
 
 
 async def run() -> None:
-    nc = NATS()
-    await nc.connect(os.getenv("NATS_URL", "nats://nats:4222"))
+    nc = await connect_nats_from_env(os.getenv("NATS_URL", "nats://nats:4222"))
 
     async def handle_task(msg) -> None:  # type: ignore[no-untyped-def]
         task = TaskEnvelope.model_validate_json(msg.data.decode("utf-8"))

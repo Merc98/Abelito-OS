@@ -1,0 +1,7 @@
+{
+    "name": "web_search",
+    "description": "High-fidelity web searching and content extraction using Playwright.",
+    "version": "1.0.0",
+    "author": "Abel OS Team",
+    "entry_point": "main.py"
+}

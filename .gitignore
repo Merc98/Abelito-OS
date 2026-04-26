@@ -1,51 +1,24 @@
 ```
-# Compiled and build artifacts
-*.pyc
+# Backup files
+.evolution_backups/
+
+# Database files
+*.db
+
+# Python cache
 __pycache__/
-*.o
-*.obj
-*.so
-*.dll
-*.exe
-*.class
-*.out
-
-# Dependencies
-.venv/
-venv/
-node_modules/
+*.py[cod]
+data/
+.android-sdk/
+.android-cmdline-tools/
+mobile/android-dashboard/.gradle/
+mobile/android-dashboard/build/
+mobile/android-dashboard/local.properties
+mobile/android-dashboard/app/build/
 dist/
-build/
-target/
-.gradle/
-
-# Logs and temp files
-*.log
-*.tmp
-*.swp
-*.swo
-
-# Environment
-.env
-.env.local
-.env.*
-
-# Editors
-.vscode/
-.idea/
-*.swp
-*.swo
-
-# System
-.DS_Store
-Thumbs.db
-
-# Coverage
-.coverage
-coverage/
-htmlcov/
-
-# Python specific
-.mypy_cache/
+*.egg-info/
+.venv/
 .pytest_cache/
-```
+.coverage
+build/
+.env
