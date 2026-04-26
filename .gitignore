@@ -7,34 +7,18 @@
 
 # Python cache
 __pycache__/
-*.pyc
-*.pyo
-*.pyd
-
-# Dependencies
-.venv/
-venv/
-env/
-.env
-.env.local
-.env.*
-
-# Logs
-*.log
-
-# OS generated files
-.DS_Store
-Thumbs.db
-
-# IDE files
-.vscode/
-.idea/
-*.swp
-*.swo
-*.tmp
-
-# Build artifacts
+*.py[cod]
+data/
+.android-sdk/
+.android-cmdline-tools/
+mobile/android-dashboard/.gradle/
+mobile/android-dashboard/build/
+mobile/android-dashboard/local.properties
+mobile/android-dashboard/app/build/
 dist/
+*.egg-info/
+.venv/
+.pytest_cache/
+.coverage
 build/
-target/
-```
+.env

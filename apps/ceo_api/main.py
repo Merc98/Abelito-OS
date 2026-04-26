@@ -2,37 +2,92 @@ from __future__ import annotations
 
 import os
 import uuid
+import logging
+import inspect
+from contextlib import asynccontextmanager
+from pathlib import Path
 from typing import Any
 
 from fastapi import FastAPI, HTTPException
+from fastapi.responses import FileResponse
 from nats.aio.client import Client as NATS
 
 from core.memory import MemoryCore
+from shared.nats_client import connect_nats_from_env
 from shared.schemas import CEOMessage, OsintRequest, TaskEnvelope, WorkflowResponse
 
-app = FastAPI(title="Abel OS+ CEO API", version="3.3.0")
+logger = logging.getLogger("abel.ceo_api")
+DASHBOARD_HTML = Path(__file__).resolve().parent / "dashboard" / "index.html"
 
-_nats: NATS | None = None
+_nats: Any | None = None
 _memory: MemoryCore | None = None
 
 
-@app.on_event("startup")
-async def startup() -> None:
+@asynccontextmanager
+async def lifespan(app: FastAPI):
     global _nats, _memory
-    _nats = NATS()
-    await _nats.connect(os.getenv("NATS_URL", "nats://nats:4222"))
+    _nats = await connect_nats_from_env(os.getenv("NATS_URL", "nats://nats:4222"))
     _memory = MemoryCore(os.getenv("MEMORY_DB_PATH", "./data/abel_memory.db"))
-
-
-@app.on_event("shutdown")
-async def shutdown() -> None:
+    yield
     if _nats and _nats.is_connected:
         await _nats.close()
+
+
+app = FastAPI(title="Abel OS+ CEO API", version="3.3.0", lifespan=lifespan)
+
+
+@app.post("/task/route")
+async def route_task(task: CEOMessage):
+    """Router Agent: Analyzes task and assigns to specialist."""
+    logger.info(f"Routing task: {task.text}")
+    
+    # Simple logic for demonstration (in production this would use LLM classification)
+    text = task.text.lower()
+    specialist = "Generalist"
+    
+    if any(k in text for k in ["fix", "code", "refactor", "bug"]):
+        specialist = "Coder"
+    elif any(k in text for k in ["test", "verify", "security"]):
+        specialist = "Reviewer"
+    elif any(k in text for k in ["build", "deploy", "apk"]):
+        specialist = "Builder"
+    elif any(k in text for k in ["apk", "decompile", "rebuild"]):
+        specialist = "Android Analyst"
+    elif any(k in text for k in ["web", "browse", "navigate"]):
+        specialist = "Browser Worker"
+        
+    logger.info(f"Assigned task to specialist: {specialist}")
+    
+    # Store decision in Memory Curator logic
+    if _memory:
+        _memory.store_knowledge(
+            category=f"task_routing_{task.user_id}",
+            content=f"User {task.user_id} requested '{task.text}'. Routed to {specialist}.",
+            tags=["router", "log"]
+        )
+        
+    return {"status": "ROUTED", "specialist": specialist, "task": task.text}
+
+@app.get("/memory/curated")
+async def get_curated_knowledge(topic: str):
+    """Memory Curator: Retrieve durable decisions and fixes."""
+    if not _memory:
+        raise HTTPException(status_code=500, detail="Memory not initialized")
+    
+    results = _memory.search_knowledge(topic)
+    return {"topic": topic, "results": results}
 
 
 @app.get("/health")
 async def health() -> dict[str, str]:
     return {"status": "ok", "service": "ceo-api"}
+
+
+@app.get("/dashboard")
+async def dashboard() -> FileResponse:
+    if not DASHBOARD_HTML.exists():
+        raise HTTPException(status_code=404, detail="dashboard unavailable")
+    return FileResponse(DASHBOARD_HTML)
 
 
 @app.post("/v1/message", response_model=WorkflowResponse)
@@ -108,3 +163,102 @@ async def lane_defaults() -> dict[str, dict[str, int | str]]:
         "DURABLE": {"deadline_soft_ms": 10000, "deadline_hard_ms": 300000},
         "BACKGROUND": {"deadline_soft_ms": 20000, "deadline_hard_ms": 600000},
     }
+
+
+# ── Auth endpoints ─────────────────────────────────────────────────────────────
+
+from pydantic import BaseModel as _BM
+
+
+class LoginRequest(_BM):
+    user_id: str
+    password: str
+
+
+class LoginResponse(_BM):
+    token: str
+    role: str
+
+
+@app.post("/v1/auth/login", response_model=LoginResponse)
+async def login(req: LoginRequest) -> LoginResponse:
+    from shared.auth import UserStore
+    store = UserStore(os.getenv("USERS_DB_PATH", "./data/abel_users.db"))
+    token = store.authenticate(req.user_id, req.password)
+    if not token:
+        raise HTTPException(status_code=401, detail="Invalid credentials")
+    from shared.auth import verify_token
+    payload = verify_token(token)
+    return LoginResponse(token=token, role=payload.role.value)
+
+
+# ── Provider endpoints ─────────────────────────────────────────────────────────
+
+class SwitchProviderRequest(_BM):
+    provider: str
+
+
+@app.get("/v1/providers")
+async def list_providers() -> list[dict]:
+    from shared.providers.registry import build_default_registry
+    registry = build_default_registry()
+    return registry.list_providers()
+
+
+@app.post("/v1/providers/switch")
+async def switch_provider(req: SwitchProviderRequest) -> dict[str, str]:
+    from shared.providers.registry import build_default_registry
+    registry = build_default_registry()
+    try:
+        registry.set_active(req.provider)
+    except KeyError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    return {"active_provider": registry.active_name}
+
+
+# ── Skills endpoints ───────────────────────────────────────────────────────────
+
+class ExecuteSkillRequest(_BM):
+    skill: str
+    action: str
+    params: dict[str, Any] = {}
+
+
+@app.get("/v1/skills")
+async def list_skills() -> list[dict]:
+    from skills.__loader__ import registry
+    return registry.list_available()
+
+
+@app.post("/v1/skills/execute")
+async def execute_skill(req: ExecuteSkillRequest) -> Any:
+    from skills.__loader__ import registry
+    try:
+        skill_instance = registry.load_skill(req.skill)
+        
+        # Check if it has the requested action as a method
+        action_method = getattr(skill_instance, req.action, None)
+        if not action_method or not callable(action_method):
+            # Fallback to 'execute_action' common interface if it exists
+            action_method = getattr(skill_instance, "execute_action", None)
+            if not action_method:
+                raise HTTPException(status_code=400, detail=f"Action '{req.action}' not found in skill '{req.skill}'")
+            
+            # Use execute_action(action, params)
+            if inspect.iscoroutinefunction(action_method):
+                return await action_method(req.action, req.params)
+            else:
+                return action_method(req.action, req.params)
+
+        # Direct method call with params
+        if inspect.iscoroutinefunction(action_method):
+            return await action_method(**req.params)
+        else:
+            return action_method(**req.params)
+            
+    except KeyError:
+        raise HTTPException(status_code=404, detail=f"Skill '{req.skill}' not found")
+    except Exception as e:
+        logger.error(f"Skill execution failed: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+

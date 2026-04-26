@@ -47,6 +47,48 @@ class MemoryCore:
                 )
                 """
             )
+            # ── Long-Term Memory (LTM) ──────────────────────────────────────────
+            conn.execute(
+                """
+                CREATE TABLE IF NOT EXISTS knowledge_base (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    ts REAL NOT NULL,
+                    category TEXT NOT NULL,
+                    content TEXT NOT NULL,
+                    tags TEXT,
+                    metadata_json TEXT
+                )
+                """
+            )
+            # Create FTS5 virtual table for lightning search
+            try:
+                conn.execute(
+                    "CREATE VIRTUAL TABLE IF NOT EXISTS knowledge_search USING fts5(content, tokenize='porter')"
+                )
+            except sqlite3.OperationalError:
+                # FTS5 might not be available in some environments, fallback to basic indexing
+                pass
+            
+            # ── Vector Episodic Memory (sqlite-vec) ─────────────────────────
+            conn.execute(
+                """
+                CREATE TABLE IF NOT EXISTS episodic_records (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    ts REAL NOT NULL,
+                    workflow_id TEXT,
+                    content TEXT NOT NULL,
+                    metadata_json TEXT
+                )
+                """
+            )
+            # Intentar inicializar la tabla de vectores si sqlite-vec está cargado
+            try:
+                conn.execute(
+                    "CREATE VIRTUAL TABLE IF NOT EXISTS episodic_vectors USING vec0(rowid INTEGER PRIMARY KEY, embedding float[1536])"
+                )
+            except sqlite3.OperationalError:
+                pass
+
 
     def record_event(
         self,
@@ -132,6 +174,71 @@ class MemoryCore:
             ],
         }
 
+    def store_knowledge(
+        self,
+        category: str,
+        content: str,
+        tags: list[str] | None = None,
+        metadata: dict[str, Any] | None = None,
+    ) -> int:
+        ts = time.time()
+        with self._conn() as conn:
+            cursor = conn.execute(
+                """
+                INSERT INTO knowledge_base(ts, category, content, tags, metadata_json)
+                VALUES (?, ?, ?, ?, ?)
+                """,
+                (ts, category, content, ",".join(tags or []), json.dumps(metadata or {})),
+            )
+            # Update FTS index
+            try:
+                conn.execute(
+                    "INSERT INTO knowledge_search(rowid, content) VALUES (?, ?)",
+                    (cursor.lastrowid, content)
+                )
+            except sqlite3.OperationalError:
+                pass
+            return cursor.lastrowid or 0
+
+    def search_knowledge(self, query: str, limit: int = 10) -> list[dict[str, Any]]:
+        with self._conn() as conn:
+            # Try FTS5 search first
+            try:
+                rows = conn.execute(
+                    """
+                    SELECT kb.id, kb.ts, kb.category, kb.content, kb.tags, kb.metadata_json
+                    FROM knowledge_base kb
+                    JOIN knowledge_search ks ON kb.id = ks.rowid
+                    WHERE knowledge_search MATCH ?
+                    ORDER BY rank
+                    LIMIT ?
+                    """,
+                    (query, limit),
+                ).fetchall()
+            except sqlite3.OperationalError:
+                # Fallback to basic LIKE search
+                rows = conn.execute(
+                    """
+                    SELECT id, ts, category, content, tags, metadata_json
+                    FROM knowledge_base
+                    WHERE content LIKE ? OR category LIKE ?
+                    ORDER BY ts DESC
+                    LIMIT ?
+                    """,
+                    (f"%{query}%", f"%{query}%", limit),
+                ).fetchall()
+
+        return [
+            {
+                "id": row["id"],
+                "ts": row["ts"],
+                "category": row["category"],
+                "content": row["content"],
+                "tags": (row["tags"] or "").split(",") if row["tags"] else [],
+                "metadata": json.loads(row["metadata_json"] or "{}"),
+            }
+            for row in rows
+        ]
     def find_recent_failure_fingerprint(self, fingerprint: str, limit: int = 5) -> list[dict[str, Any]]:
         with self._conn() as conn:
             rows = conn.execute(
@@ -145,3 +252,67 @@ class MemoryCore:
                 (fingerprint, limit),
             ).fetchall()
         return [dict(row) for row in rows]
+
+    # ── Episodic/Vector API ─────────────────────────────────────────────────
+
+    def store_episode(
+        self,
+        workflow_id: str,
+        content: str,
+        embedding: list[float],
+        metadata: dict[str, Any] | None = None,
+    ) -> int:
+        """Stores an episodic memory with its vector embedding."""
+        ts = time.time()
+        with self._conn() as conn:
+            cursor = conn.execute(
+                """
+                INSERT INTO episodic_records(ts, workflow_id, content, metadata_json)
+                VALUES (?, ?, ?, ?)
+                """,
+                (ts, workflow_id, content, json.dumps(metadata or {})),
+            )
+            row_id = cursor.lastrowid
+            
+            try:
+                # Store the vector embedding with precisely the matching rowid
+                conn.execute(
+                    "INSERT INTO episodic_vectors(rowid, embedding) VALUES (?, ?)",
+                    (row_id, json.dumps(embedding))
+                )
+            except sqlite3.OperationalError:
+                pass # Extensión sqlite-vec no cargada o configuración incorrecta
+                
+            return row_id or 0
+
+    def semantic_search(self, query_embedding: list[float], limit: int = 5) -> list[dict[str, Any]]:
+        """Finds most similar episodes using KNN on sqlite-vec. Returns content and distance."""
+        with self._conn() as conn:
+            try:
+                rows = conn.execute(
+                    """
+                    SELECT 
+                        r.id, r.ts, r.workflow_id, r.content, r.metadata_json,
+                        distance
+                    FROM episodic_vectors v
+                    JOIN episodic_records r ON v.rowid = r.id
+                    WHERE embedding MATCH ? AND k = ?
+                    ORDER BY distance
+                    """,
+                    (json.dumps(query_embedding), limit)
+                ).fetchall()
+            except sqlite3.OperationalError:
+                # Fallback if no vec extension
+                return []
+                
+        return [
+            {
+                "id": row["id"],
+                "ts": row["ts"],
+                "workflow_id": row["workflow_id"],
+                "content": row["content"],
+                "metadata": json.loads(row["metadata_json"] or "{}"),
+                "distance": row["distance"]
+            }
+            for row in rows
+        ]

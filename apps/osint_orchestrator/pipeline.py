@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import asyncio
+import os
 import re
 from dataclasses import dataclass
 
@@ -38,6 +39,7 @@ def validate_request(req: OsintRequest) -> ValidationResult:
             False,
             "AUTO mode is disabled for sensitive target types; use RECOMMEND_ONLY + HITL",
         )
+
     return ValidationResult(True)
 
 
@@ -107,8 +109,9 @@ async def _safe_collect(task, source_name: str, workflow_id: str, memory: Memory
 
 async def run_osint(req: OsintRequest, workflow_id: str | None = None) -> OsintReport:
     wf = workflow_id or "wf-ephemeral"
-    memory = MemoryCore()
-
+    # Use MEMORY_DB_PATH env var so the pipeline writes to the same DB as the
+    # calling service (osint_orchestrator) rather than always using the default path.
+    memory = MemoryCore(os.getenv("MEMORY_DB_PATH", "./data/abel_memory.db"))
     validation = validate_request(req)
     if not validation.ok:
         memory.record_failure(wf, "policy_validation", validation.reason, fingerprint="policy_rejection")
