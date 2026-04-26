@@ -1,415 +1,608 @@
-# Abelito OS - Sistema Operativo Autónomo Evolutivo v4.0
+# Abelito OS v4.0 - Sistema Operativo Autónomo con IA
 
-**Abelito OS** es un sistema operativo autónomo y auto-evolutivo que gira en torno al chat como interfaz principal. Capaz de ejecutarse en cualquier dispositivo (teléfono, servidor, desktop) y evolucionar automáticamente mediante autoanálisis, inyección de código, detección automática de IAs locales, navegación web avanzada y extracción inteligente de información.
+[![Version](https://img.shields.io/badge/version-4.0-blue.svg)](https://github.com/abelito-os)
+[![Python](https://img.shields.io/badge/python-3.8+-green.svg)](https://python.org)
+[![License](https://img.shields.io/badge/license-MIT-yellow.svg)](LICENSE)
 
-## 🌟 Características Principales
+## 🚀 Características Principales
 
-### 🔍 Autoanálisis y Mejora Continua
-- Escaneo automático del código base en busca de problemas de seguridad, rendimiento y mantenibilidad
-- Detección de credenciales hardcodeadas, patrones anti-singletón, cláusulas except bare
-- Aplicación automática de correcciones cuando es posible
-- Generación de planes de mejora priorizados
+Abelito OS es un sistema operativo autónomo impulsado por IA que puede:
 
-### 🤖 Conector Automático de IA
-- **Detección automática** de instalaciones locales: Ollama, LM Studio, vLLM, TGI, Hugging Face
-- **Auto-conexión** tras selección del usuario
-- **Auto-inicio** de servicios detenidos (Ollama)
-- Soporte para múltiples modelos simultáneos
-- API unificada para chat con cualquier proveedor
+- **🤖 Auto-analizarse y mejorarse** a sí mismo continuamente
+- **📱 Ejecutarse en cualquier dispositivo** (móvil, desktop, servidor)
+- **🌐 Conectarse automáticamente a redes** usando modo "Oxígeno"
+- **🔍 Analizar binarios** e inyectar código de forma inteligente
+- **💬 Conectarse a IAs locales** (Ollama, LM Studio, etc.)
+- **🌎 Navegar web y extraer información** automáticamente
+- **🛠️ Ejecutar herramientas** y convertirse en la herramienta necesaria
+- **🔄 Evolucionar** basado en instrucciones en lenguaje natural
 
-### 🌐 WebView Chat Multi-Plataforma
-- Interfaz embebida para login en ChatGPT, Claude, Gemini, Poe
-- Gestión de sesiones persistente con cookies
-- Interfaz de chat en tiempo real vía WebSocket
-- Historial de conversaciones almacenado localmente
-- Accesible desde cualquier navegador móvil
+---
 
-### 🧭 Navegación y Extracción Avanzada
-- Motor de navegación basado en Playwright
-- Extracción de información con reglas configurables (CSS selectors, regex)
-- Soporte para scroll infinito, capturas de pantalla, llenado de formularios
-- Sesiones persistentes con cookies
-- Módulos especializados para OSINT (email, username, domain)
+## 📋 Tabla de Contenidos
 
-### 💉 Inyección y Análisis de Binarios
-- Análisis estático de binarios (PEF, ELF, Mach-O)
-- Detección de arquitectura y secciones
-- Extracción de imports, exports y strings
-- Detección de amenazas potenciales
-- Inyección dinámica con Frida
-- Parcheo de binarios
+1. [Instalación](#-instalación)
+2. [Uso en Móviles](#-uso-en-móviles)
+3. [Módulos Principales](#-módulos-principales)
+4. [Comandos Rápidos](#-comandos-rápidos)
+5. [API Reference](#-api-reference)
+6. [Ejemplos de Uso](#-ejemplos-de-uso)
+7. [Contribuir](#-contribuir)
 
-### 🔄 Auto-Evolución
-- Modificación del sistema basada en instrucciones en lenguaje natural
-- Creación automática de archivos y módulos
-- Gestión de dependencias
-- Sistema de backup y rollback automático
-- Historial de evoluciones aplicadas
+---
 
-### 📱 Ejecución Universal
-- Contenedores Docker para todos los servicios
-- API RESTful accesible desde cualquier dispositivo
-- Interfaz responsive optimizada para móviles
-- Túneles seguros para exposición pública
+## 🛠️ Instalación
 
-## 🏗️ Arquitectura
+### Requisitos Previos
 
+- Python 3.8+
+- pip
+- Docker (opcional, para despliegue en contenedores)
+
+### Instalación Local
+
+```bash
+# Clonar el repositorio
+git clone https://github.com/tu-usuario/abelito-os.git
+cd abelito-os
+
+# Instalar dependencias
+pip install -r requirements.txt
+
+# Verificar instalación
+python core/selfcheck.py
 ```
-┌─────────────────────────────────────────────────────────────┐
-│                    ABELITO OS v4.0                          │
-├─────────────────────────────────────────────────────────────┤
-│  ┌─────────────┐  ┌──────────────┐  ┌─────────────────┐   │
-│  │ Auto        │  │ AI           │  │ WebView         │   │
-│  │ Analyzer    │  │ Connector    │  │ Chat Manager    │   │
-│  └──────┬──────┘  └──────┬───────┘  └────────┬────────┘   │
-│         │                │                   │             │
-│  ┌──────▼────────────────▼───────────────────▼────────┐   │
-│  │           CEO API (FastAPI + NATS)                 │   │
-│  └──────┬─────────────────────────────────────────────┘   │
-│         │                                                  │
-│  ┌──────▼─────────────────────────────────────────────┐   │
-│  │  Navigation │ Binary Injector │ Self-Evolution    │   │
-│  └──────┬─────────────────────────────────────────────┘   │
-│         │                                                  │
-│  ┌──────▼─────────────────────────────────────────────┐   │
-│  │     Memory Core (SQLite) + Message Bus (NATS)      │   │
-│  └────────────────────────────────────────────────────┘   │
-└─────────────────────────────────────────────────────────────┘
-```
-
-## 🚀 Inicio Rápido
-
-### Prerrequisitos
-- Docker y Docker Compose
-- Python 3.12+ (para desarrollo local)
-- Opcional: Ollama, LM Studio u otra IA local
-- Herramientas de análisis: `file`, `nm`, `strings`, `readelf` (para binarios)
 
 ### Instalación con Docker
 
 ```bash
-# Clonar el repositorio
-git clone <tu-repo-abelito-os>
-cd abelito-os
+# Construir imagen
+docker build -t abelito-os:latest .
 
-# Levantar todos los servicios
-make up
-
-# Verificar estado
-make logs
-
-# Ejecutar auto-chequeo
-make selfcheck
+# Ejecutar contenedor
+docker run -d \
+  -p 8000:8000 \
+  -p 8080:8080 \
+  -v $(pwd)/config:/app/config \
+  --name abelito-os \
+  abelito-os:latest
 ```
 
-### Configuración de Variables de Entorno
+### Variables de Entorno
 
-Crear `.env` en la raíz:
+Crea un archivo `.env` en la raíz:
 
 ```bash
-# NATS Message Bus
-NATS_URL=nats://nats:4222
+# Configuración de IA
+OLLAMA_HOST=localhost:11434
+LM_STUDIO_HOST=localhost:1234
+OPENAI_API_KEY=tu-api-key
 
-# Memory Core
-MEMORY_DB_PATH=/app/data/abel_memory.db
+# Configuración de Red
+OXYGEN_MODE=true
+AUTO_CONNECT=true
 
-# AI Connector
-OLLAMA_HOST=http://host.docker.internal:11434
-LMSTUDIO_HOST=http://host.docker.internal:1234
-
-# Security
-SECRET_KEY=tu_clave_secreta_muy_segura
-API_RATE_LIMIT=100
-
-# Logging
-LOG_LEVEL=INFO
-STRUCTLOG_FORMAT=json
+# Configuración de Seguridad
+ENCRYPTION_KEY=tu-clave-secreta
+ALLOWED_NETWORKS=*
 ```
-
-## 📖 Uso
-
-### 1. Autoanálisis del Sistema
-
-```bash
-# Ejecutar análisis completo
-python apps/auto_analyzer/analyzer.py
-
-# Ver reporte
-# El sistema generará un informe con:
-# - Problemas críticos de seguridad
-# - Sugerencias de mejora
-# - Correcciones automáticas aplicadas
-```
-
-### 2. Conectar a IA Local
-
-```bash
-# Detectar IAs disponibles
-python apps/ai_connector/connector.py
-
-# El sistema mostrará:
-# • Ollama (ollama) - Status: running - Models: llama2, mistral...
-# • LM Studio (lmstudio) - Status: stopped
-# 
-# ✓ Conectado automáticamente a Ollama
-```
-
-### 3. Chat con WebView
-
-```bash
-# Iniciar servidor WebView
-python apps/webview_chat/webview.py
-
-# Acceder desde navegador:
-# http://localhost:8081/chat/login/chatgpt
-# http://localhost:8081/chat/login/claude
-# http://localhost:8081/chat/{session_id}
-```
-
-### 4. Navegación y Extracción
-
-```python
-from core.navigation.engine import NavigationEngine, ExtractionRule
-
-async def extract_info():
-    nav = NavigationEngine(headless=True)
-    await nav.start()
-    
-    # Navegar y extraer
-    result = await nav.navigate("https://example.com")
-    print(f"Título: {result.title}")
-    print(f"Links: {len(result.links)}")
-    
-    # Extracción con reglas
-    rules = [
-        ExtractionRule(name="heading", selector="h1"),
-        ExtractionRule(name="links", selector="a", multiple=True),
-    ]
-    data = await nav.extract_with_rules("https://example.com", rules)
-    
-    await nav.stop()
-```
-
-### 5. Análisis de Binarios
-
-```python
-from apps.binary_injector.injector import BinaryAnalyzer
-
-async def analyze():
-    analyzer = BinaryAnalyzer()
-    result = await analyzer.analyze("/path/to/binary")
-    
-    print(f"Tipo: {result.file_type}")
-    print(f"Arquitectura: {result.architecture}")
-    print(f"Amenazas: {len(result.threats)}")
-```
-
-### 6. Auto-Evolución
-
-```python
-from apps.self_evolution.evolution import SelfEvolutionEngine
-
-async def evolve():
-    engine = SelfEvolutionEngine()
-    
-    # Evolucionar desde instrucción en lenguaje natural
-    result = await engine.evolve_from_chat(
-        "Crear un nuevo módulo para procesamiento de datos"
-    )
-    
-    print(f"Cambios aplicados: {result.changes_applied}")
-    print(f"Backup: {result.backup_path}")
-```
-
-### 7. Uso desde Teléfono
-
-1. **Exponer el servicio:**
-```bash
-# Usar ngrok o cloudflared
-ngrok http 8080
-```
-
-2. **Enviar petición OSINT:**
-```bash
-curl -X POST https://tu-tunnel.ngrok.io/v1/osint/start \
-  -H "Content-Type: application/json" \
-  -d '{
-    "target": "usuario@example.com",
-    "target_type": "email",
-    "purpose": "security_audit",
-    "consent_or_legal_basis": "legitimate_interest",
-    "mode": "RECOMMEND_ONLY"
-  }'
-```
-
-3. **Consultar resultados:**
-```bash
-curl https://tu-tunnel.ngrok.io/v1/memory/{workflow_id}
-```
-
-## 🔌 Endpoints API
-
-| Endpoint | Método | Descripción |
-|----------|--------|-------------|
-| `/health` | GET | Estado del sistema |
-| `/v1/message` | POST | Enviar mensaje al CEO |
-| `/v1/osint/start` | POST | Iniciar investigación OSINT |
-| `/v1/memory/{id}` | GET | Reconstruir workflow |
-| `/v1/lanes` | GET | Configuración de latencia |
-| `/chat/login/{service}` | GET | Login WebView |
-| `/chat/{session_id}` | GET | Interfaz de chat |
-| `/ws/chat/{session_id}` | WS | Chat en tiempo real |
-
-## 🛠️ Desarrollo
-
-### Estructura del Proyecto
-
-```
-/workspace
-├── apps/
-│   ├── auto_analyzer/      # Autoanálisis y mejora
-│   ├── ai_connector/       # Detección y conexión IA
-│   ├── webview_chat/       # Chat embebido
-│   ├── binary_injector/    # Análisis e inyección de binarios
-│   ├── self_evolution/     # Auto-evolución del sistema
-│   ├── ceo_api/           # API principal
-│   ├── osint_orchestrator/# Orquestación OSINT
-│   ├── worker/            # Workers asíncronos
-│   └── sandbox_runtime/   # Sandbox de ejecución
-├── core/
-│   ├── navigation/        # Motor de navegación
-│   ├── info_extraction/   # Extracción de información
-│   ├── memory.py          # Memoria durable
-│   └── sandbox.py         # Sandbox de ejecución
-├── shared/
-│   └── schemas.py         # Esquemas Pydantic
-├── scripts/
-│   └── selfcheck.py       # Auto-verificación
-└── docs/
-    └── ARCHITECTURE_V3_1.md
-```
-
-### Agregar Nueva Funcionalidad
-
-El sistema puede auto-modificarse. Ejemplo:
-
-```python
-# El auto-analyzer detecta la necesidad y sugiere:
-def add_new_feature(feature_name: str):
-    """Función auto-generada por Abelito OS."""
-    # Implementación insertada automáticamente
-    pass
-```
-
-## 🔒 Seguridad y Guardrails
-
-- **Solo fuentes públicas** en modo bootstrap
-- **AUTO desactivado** para datos sensibles (teléfono, placa, imagen)
-- **Requiere propósito** y base legal para cada consulta
-- **Modo RECOMMEND_ONLY** por defecto
-- **Rate limiting** en todos los endpoints
-- **Sanitización** de todas las entradas
-
-## 📊 Monitorización
-
-```bash
-# Logs en tiempo real
-make logs
-
-# Métricas de Prometheus
-curl http://localhost:8080/metrics
-
-# Health checks
-curl http://localhost:8080/health
-```
-
-## 🧪 Testing
-
-```bash
-# Ejecutar tests
-pytest
-
-# Coverage
-pytest --cov=.
-
-# Auto-check
-make selfcheck
-```
-
-## 🔄 Actualización y Evolución
-
-El sistema se auto-actualiza mediante:
-
-1. **Autoanálisis periódico** del código base
-2. **Detección de mejoras** en dependencias
-3. **Aplicación automática** de fixes de seguridad
-4. **Reconstrucción** tras fallos usando Memory Core
-
-```bash
-# Forzar auto-análisis
-python apps/auto_analyzer/analyzer.py
-
-# Ver historial de cambios
-cat ./data/analysis_reports/*.json
-```
-
-## 📱 Integración con Dispositivos Móviles
-
-### Android/iOS
-
-1. Exponer API mediante túnel seguro
-2. Usar WebView nativa para interfaz de chat
-3. Llamar endpoints REST directamente
-4. Suscribirse a WebSocket para actualizaciones
-
-### Ejemplo React Native
-
-```javascript
-const chatWithAbelito = async (message) => {
-  const response = await fetch('https://tu-url/v1/message', {
-    method: 'POST',
-    headers: {'Content-Type': 'application/json'},
-    body: JSON.stringify({user_id: 'mobile-user', text: message})
-  });
-  return await response.json();
-};
-```
-
-## 🎯 Casos de Uso
-
-### 1. Investigación OSINT
-```bash
-curl -X POST /v1/osint/start -d '{
-  "target": "nombre_usuario",
-  "target_type": "username",
-  "purpose": "background_check",
-  "mode": "RECOMMEND_ONLY"
-}'
-```
-
-### 2. Análisis de Binarios
-```python
-from apps.binary_injector import analyze_binary
-report = analyze_binary("./malware.exe")
-print(report["threats"])
-```
-
-### 3. Chat Multi-Modelo
-```python
-from apps.ai_connector import AIConnector
-connector = AIConnector()
-await connector.discover_and_connect()
-response = await connector.chat("¿Qué puedes hacer?")
-```
-
-## 📝 Licencia
-
-MIT License - Ver LICENSE para detalles.
-
-## 🤝 Contribuciones
-
-Las contribuciones son bienvenidas. El sistema puede auto-analizar tus PRs y sugerir mejoras.
 
 ---
 
-**Abelito OS v4.0** - Un sistema que evoluciona contigo.
+## 📱 Uso en Móviles
+
+Abelito OS puede ejecutarse en cualquier teléfono Android (con Termux) o iOS (con jailbreak), o accederse vía navegador web.
+
+### Opción 1: Servidor Web Móvil (Recomendado)
+
+Esta opción permite usar Abelito OS desde cualquier teléfono sin instalar nada, solo accediendo vía navegador.
+
+#### Paso 1: Iniciar el servidor
+
+```bash
+# En tu computadora o servidor
+python apps/mobile_runtime/mobile_server.py
+```
+
+#### Paso 2: Acceder desde el móvil
+
+1. Asegúrate que tu teléfono y el servidor estén en la misma red WiFi
+2. Abre el navegador en tu teléfono
+3. Ve a: `http://IP-DEL-SERVIDOR:8080`
+4. ¡Listo! Tienes la interfaz completa de Abelito OS
+
+#### Características de la Interfaz Móvil:
+
+- ✅ Escaneo de redes WiFi cercanas
+- ✅ Conexión automática a redes
+- ✅ Información del dispositivo
+- ✅ Ejecución de comandos remotos
+- ✅ Logs en tiempo real
+- ✅ Interface responsive y optimizada para táctil
+
+### Opción 2: Instalación Nativa en Android (Termux)
+
+```bash
+# Instalar Termux desde F-Droid (recomendado) o Play Store
+
+# Actualizar paquetes
+pkg update && pkg upgrade
+
+# Instalar Python
+pkg install python
+
+# Instalar dependencias adicionales
+pkg install git curl wget nmap netcat-openbsd
+
+# Clonar repositorio
+git clone https://github.com/tu-usuario/abelito-os.git
+cd abelito-os
+
+# Instalar dependencias de Python
+pip install -r requirements.txt
+
+# Ejecutar
+python apps/mobile_runtime/network_manager.py --oxygen
+```
+
+### Opción 3: Modo Oxígeno Automático
+
+El **Modo Oxígeno** es la característica que permite a Abelito OS buscar constantemente conectividad como "fuente de vida":
+
+```bash
+# Iniciar modo oxígeno
+python apps/mobile_runtime/network_manager.py --oxygen
+
+# El sistema:
+# 1. Escanea redes WiFi cercanas cada 10 segundos
+# 2. Prioriza redes conocidas
+# 3. Se conecta automáticamente a redes abiertas
+# 4. Usa herramientas de pentesting si están disponibles
+# 5. Mantiene logs de toda la actividad
+```
+
+#### Herramientas de Pentesting Soportadas:
+
+- `nmcli` - Gestión de redes (Linux/Android root)
+- `iwlist` - Escaneo WiFi (requiere root)
+- `airodump-ng` - Análisis avanzado WiFi (requiere root + monitor mode)
+- `nmap` - Escaneo de puertos y servicios
+- `netcat` - Conexiones de red
+
+> ⚠️ **ADVERTENCIA LEGAL**: El uso de herramientas de pentesting solo está permitido en redes propias o con autorización explícita. El uso no autorizado es ilegal.
+
+---
+
+## 🔧 Módulos Principales
+
+### 1. Auto-Análisis (`apps/auto_analyzer`)
+
+El sistema puede analizarse a sí mismo y aplicar mejoras automáticamente.
+
+```python
+from apps.auto_analyzer.analyzer import AutoAnalyzer
+
+analyzer = AutoAnalyzer()
+issues = analyzer.scan_codebase()
+analyzer.apply_fixes(issues)
+```
+
+**Características:**
+- Detección de código duplicado
+- Identificación de vulnerabilidades
+- Sugerencias de optimización
+- Auto-corrección de bugs
+
+### 2. Conector de IA (`apps/ai_connector`)
+
+Detección y conexión automática a modelos de IA locales.
+
+```python
+from apps.ai_connector.connector import AIConnector
+
+connector = AIConnector()
+models = connector.detect_local_models()
+# Detecta: Ollama, LM Studio, GPT4All, etc.
+
+connector.connect_to_model("ollama://llama2")
+response = connector.chat("Hola, ¿cómo estás?")
+```
+
+**Modelos Soportados:**
+- Ollama (local)
+- LM Studio (local)
+- GPT4All (local)
+- OpenAI API (remoto)
+- Anthropic Claude (remoto)
+- Google Gemini (remoto)
+
+### 3. Inyector de Binarios (`apps/binary_injector`)
+
+Análisis e inyección de código en binarios.
+
+```python
+from apps.binary_injector.injector import BinaryInjector
+
+injector = BinaryInjector()
+analysis = injector.analyze_binary("/path/to/binary")
+print(f"Tipo: {analysis['type']}")
+print(f"Arquitectura: {analysis['architecture']}")
+print(f"Strings encontradas: {analysis['strings_count']}")
+
+# Inyección con Frida
+injector.inject_with_frida("/path/to/binary", "script.js")
+```
+
+**Formatos Soportados:**
+- PE (Windows)
+- ELF (Linux/Android)
+- Mach-O (macOS/iOS)
+
+### 4. Auto-Evolución (`apps/self_evolution`)
+
+El sistema puede modificarse a sí mismo basado en instrucciones en lenguaje natural.
+
+```python
+from apps.self_evolution.evolution import SelfEvolution
+
+evolution = SelfEvolution()
+
+# Instrucción en lenguaje natural
+instruction = "Agrega un logger que guarde todos los errores en un archivo"
+evolution.evolve_from_instruction(instruction)
+
+# El sistema:
+# 1. Interpreta la instrucción
+# 2. Crea/modifica archivos
+# 3. Instala dependencias si es necesario
+# 4. Crea backup automático
+# 5. Aplica los cambios
+```
+
+### 5. Navegación Web (`core/navigation`)
+
+Navegación automática y extracción de información.
+
+```python
+from core.navigation.engine import NavigationEngine
+
+nav = NavigationEngine()
+results = nav.search_and_extract(
+    query="noticias sobre inteligencia artificial",
+    max_results=10,
+    extract_links=True
+)
+```
+
+### 6. Runtime Móvil (`apps/mobile_runtime`)
+
+Gestión de ejecución en dispositivos móviles y conexión automática a redes.
+
+```python
+from apps.mobile_runtime.network_manager import MobileRuntime, NetworkAutoConnect
+
+runtime = MobileRuntime()
+print(f"Plataforma: {runtime.device_info.platform}")
+print(f"Root: {runtime.device_info.is_rooted}")
+print(f"Herramientas: {runtime.available_tools}")
+
+connector = NetworkAutoConnect(runtime)
+connector.start_oxygen_mode()  # Búsqueda continua de redes
+```
+
+---
+
+## ⚡ Comandos Rápidos
+
+### Sistema General
+
+```bash
+# Verificar estado del sistema
+python core/selfcheck.py
+
+# Iniciar API principal
+python apps/ceo_api/main.py
+
+# Modo interactivo con IA
+python apps/ai_connector/interactive.py
+```
+
+### Redes y Móviles
+
+```bash
+# Escanear redes cercanas
+python apps/mobile_runtime/network_manager.py --scan
+
+# Conectar a red específica
+python apps/mobile_runtime/network_manager.py --connect "MiWiFi" --password "clave123"
+
+# Iniciar modo oxígeno
+python apps/mobile_runtime/network_manager.py --oxygen
+
+# Iniciar servidor móvil
+python apps/mobile_runtime/mobile_server.py
+
+# Guardar red conocida
+python apps/mobile_runtime/network_manager.py --save "MiWiFi" "clave123"
+```
+
+### Análisis y Evolución
+
+```bash
+# Auto-analizar código
+python apps/auto_analyzer/analyzer.py --scan
+
+# Analizar binario
+python apps/binary_injector/injector.py --analyze /path/to/file
+
+# Evolucionar sistema
+python apps/self_evolution/evolution.py --instruction "Mejora la seguridad del login"
+```
+
+### Navegación
+
+```bash
+# Buscar y extraer información
+python core/navigation/engine.py --search "tema de interés" --extract
+
+# Navegar URL específica
+python core/navigation/engine.py --url https://ejemplo.com --scrape
+```
+
+---
+
+## 🌐 API Reference
+
+### Endpoints Principales
+
+La API corre en `http://localhost:8000/api/v1`
+
+#### Status
+
+```bash
+GET /status
+```
+
+Respuesta:
+```json
+{
+  "status": "running",
+  "version": "4.0",
+  "modules_active": 6,
+  "uptime": "2h 15m"
+}
+```
+
+#### Chat con IA
+
+```bash
+POST /chat
+Content-Type: application/json
+
+{
+  "message": "¿Qué puedes hacer?",
+  "model": "ollama://llama2"
+}
+```
+
+#### Escaneo de Redes
+
+```bash
+GET /networks/scan
+```
+
+Respuesta:
+```json
+{
+  "success": true,
+  "networks": [
+    {
+      "ssid": "WiFi_Casa",
+      "signal_strength": -45,
+      "security": "WPA2",
+      "is_open": false
+    }
+  ]
+}
+```
+
+#### Auto-Evolución
+
+```bash
+POST /evolve
+Content-Type: application/json
+
+{
+  "instruction": "Agrega soporte para Telegram bot",
+  "auto_apply": true
+}
+```
+
+---
+
+## 📚 Ejemplos de Uso
+
+### Ejemplo 1: Configuración Inicial en Móvil
+
+```bash
+# 1. Instalar en Termux (Android)
+pkg install python git
+git clone https://github.com/tu-usuario/abelito-os.git
+cd abelito-os
+pip install -r requirements.txt
+
+# 2. Configurar redes conocidas
+python apps/mobile_runtime/network_manager.py --save "Casa" "mi_password"
+python apps/mobile_runtime/network_manager.py --save "Oficina" "office_wifi_pass"
+
+# 3. Iniciar modo oxígeno
+python apps/mobile_runtime/network_manager.py --oxygen
+
+# El sistema automáticamente:
+# - Escaneará redes cada 10 segundos
+# - Se conectará a "Casa" o "Oficina" cuando estén disponibles
+# - Buscará redes abiertas si no hay conocidas
+```
+
+### Ejemplo 2: Auto-Mejora del Sistema
+
+```python
+from apps.self_evolution.evolution import SelfEvolution
+
+evolution = SelfEvolution()
+
+# Pedir mejora en lenguaje natural
+instructions = [
+    "Agrega un endpoint para subir archivos",
+    "Mejora el logging para que guarde en formato JSON",
+    "Crea un módulo para enviar notificaciones por email"
+]
+
+for instruction in instructions:
+    print(f"Ejecutando: {instruction}")
+    evolution.evolve_from_instruction(instruction, auto_apply=True)
+    
+print("✅ Sistema evolucionado exitosamente")
+```
+
+### Ejemplo 3: Análisis de Binario Sospechoso
+
+```python
+from apps.binary_injector.injector import BinaryInjector
+
+injector = BinaryInjector()
+
+# Analizar archivo
+analysis = injector.analyze_binary("/downloads/archivo.exe")
+
+print(f"Tipo: {analysis['type']}")
+print(f"Imports sospechosos: {analysis['suspicious_imports']}")
+print(f"Amenazas potenciales: {analysis['threats']}")
+
+# Si es seguro, inyectar script de monitoreo
+if analysis['threats'] == 0:
+    injector.inject_monitoring_script("/downloads/archivo.exe")
+```
+
+### Ejemplo 4: Conexión a IA Local
+
+```python
+from apps.ai_connector.connector import AIConnector
+
+connector = AIConnector()
+
+# Detectar modelos instalados
+models = connector.detect_local_models()
+print(f"Modelos encontrados: {models}")
+
+# Conectar al primero disponible
+if models:
+    connector.connect_to_model(models[0]['url'])
+    
+    # Conversación
+    while True:
+        user_input = input("Tú: ")
+        if user_input.lower() == 'salir':
+            break
+        
+        response = connector.chat(user_input)
+        print(f"IA: {response}")
+```
+
+---
+
+## 🏗️ Arquitectura
+
+```
+abelito-os/
+├── apps/
+│   ├── auto_analyzer/       # Auto-análisis de código
+│   ├── ai_connector/        # Conexión a IAs
+│   ├── binary_injector/     # Inyección en binarios
+│   ├── self_evolution/      # Auto-evolución
+│   ├── mobile_runtime/      # Ejecución en móviles
+│   ├── network_autoconnect/ # Conexión automática a redes
+│   └── ceo_api/            # API principal
+├── core/
+│   ├── navigation/         # Navegación web
+│   ├── memory.py          # Memoria del sistema
+│   └── selfcheck.py       # Verificación interna
+├── config/                 # Configuraciones
+├── tests/                  # Tests automatizados
+└── README.md              # Este archivo
+```
+
+---
+
+## 🔒 Seguridad
+
+### Consideraciones Importantes
+
+1. **Herramientas de Pentesting**: Solo úsalas en redes propias o con autorización
+2. **Inyección de Binarios**: Puede ser detectado como malware por antivirus
+3. **Auto-Evolución**: Crea backups automáticos pero revisa los cambios
+4. **Credenciales**: Nunca commits archivos `.env` con credenciales reales
+
+### Mejores Prácticas
+
+```bash
+# 1. Usar variables de entorno para credenciales
+export OPENAI_API_KEY="tu-key"
+
+# 2. Revisar cambios antes de aplicar evolución
+python apps/self_evolution/evolution.py --instruction "..." --dry-run
+
+# 3. Mantener backups
+cp -r config config.backup
+
+# 4. Ejecutar en entorno aislado para testing
+docker run --rm -it abelito-os:latest
+```
+
+---
+
+## 🤝 Contribuir
+
+1. Fork el repositorio
+2. Crea una rama (`git checkout -b feature/nueva-funcionalidad`)
+3. Commit tus cambios (`git commit -am 'Agrega nueva funcionalidad'`)
+4. Push a la rama (`git push origin feature/nueva-funcionalidad`)
+5. Abre un Pull Request
+
+### Áreas de Mejora Buscadas
+
+- 📱 Mejor soporte para iOS
+- 🌐 Más proveedores de IA soportados
+- 🔒 Mejoras de seguridad
+- 📊 Dashboard web más completo
+- 🧪 Más tests automatizados
+- 📚 Documentación en más idiomas
+
+---
+
+## 📄 Licencia
+
+Este proyecto está bajo la licencia MIT. Ver `LICENSE` para detalles.
+
+---
+
+## 🙏 Agradecimientos
+
+- Comunidad de código abierto
+- Proyectos de IA local (Ollama, LM Studio)
+- Herramientas de pentesting (Aircrack-ng, Nmap)
+- Contribuidores del proyecto
+
+---
+
+## 📞 Soporte
+
+- **Issues**: GitHub Issues
+- **Discusión**: GitHub Discussions
+- **Email**: soporte@abelito-os.dev
+
+---
+
+**Hecho con ❤️ y mucha ☕**
+
+*Abelito OS - Evolucionando constantemente*
