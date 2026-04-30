@@ -38,6 +38,7 @@ class CEOMessage(BaseModel):
     user_id: str
     text: str
     channel: str = "api"
+    mode: str = "default"
 
 
 class WorkflowResponse(BaseModel):

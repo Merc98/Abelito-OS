@@ -40,13 +40,20 @@ app = FastAPI(title="Abel OS+ CEO API", version="3.3.0", lifespan=lifespan)
 @app.post("/task/route")
 async def route_task(task: CEOMessage):
     """Router Agent: Analyzes task and assigns to specialist."""
+    from shared.agent_modes import get_mode
+
     logger.info(f"Routing task: {task.text}")
-    
-    # Simple logic for demonstration (in production this would use LLM classification)
+
     text = task.text.lower()
+    try:
+        mode = get_mode(task.mode)
+    except KeyError as exc:
+        raise HTTPException(status_code=400, detail=str(exc))
     specialist = "Generalist"
-    
-    if any(k in text for k in ["fix", "code", "refactor", "bug"]):
+
+    if mode.name == "decepticon":
+        specialist = "Security Operator"
+    elif any(k in text for k in ["fix", "code", "refactor", "bug"]):
         specialist = "Coder"
     elif any(k in text for k in ["test", "verify", "security"]):
         specialist = "Reviewer"
@@ -56,18 +63,18 @@ async def route_task(task: CEOMessage):
         specialist = "Android Analyst"
     elif any(k in text for k in ["web", "browse", "navigate"]):
         specialist = "Browser Worker"
-        
-    logger.info(f"Assigned task to specialist: {specialist}")
+
+    logger.info(f"Assigned task to specialist: {specialist} (mode={mode.name})")
     
     # Store decision in Memory Curator logic
     if _memory:
         _memory.store_knowledge(
             category=f"task_routing_{task.user_id}",
-            content=f"User {task.user_id} requested '{task.text}'. Routed to {specialist}.",
-            tags=["router", "log"]
+            content=f"User {task.user_id} requested '{task.text}' in mode={mode.name}. Routed to {specialist}.",
+            tags=["router", "log", f"mode:{mode.name}"]
         )
-        
-    return {"status": "ROUTED", "specialist": specialist, "task": task.text}
+
+    return {"status": "ROUTED", "specialist": specialist, "task": task.text, "mode": mode.name}
 
 @app.get("/memory/curated")
 async def get_curated_knowledge(topic: str):
@@ -95,7 +102,7 @@ async def dashboard() -> FileResponse:
 async def ingest_message(msg: CEOMessage) -> WorkflowResponse:
     workflow_id = f"wf-{uuid.uuid4()}"
     subject = "abel.tasks.short.ceo.classify"
-    payload = {"user_id": msg.user_id, "text": msg.text, "channel": msg.channel}
+    payload = {"user_id": msg.user_id, "text": msg.text, "channel": msg.channel, "mode": msg.mode}
 
     task = TaskEnvelope(
         task_id=f"task-{uuid.uuid4()}",
