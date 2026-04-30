@@ -1,0 +1,12 @@
+{
+  "name": "abel-os-desktop",
+  "version": "1.0.0",
+  "description": "Desktop Interface for ABEL OS+",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron ."
+  },
+  "devDependencies": {
+    "electron": "^31.0.0"
+  }
+}

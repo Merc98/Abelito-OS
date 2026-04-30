@@ -80,7 +80,6 @@ async def check_breach_surface(req: OsintRequest) -> list[Finding]:
 async def check_username_surface(req: OsintRequest) -> list[Finding]:
     if req.target_type != "username":
         return []
-
     await asyncio.sleep(0.05)
     return [
         Finding(
@@ -128,9 +127,15 @@ async def run_osint(req: OsintRequest, workflow_id: str | None = None) -> OsintR
     previous = memory.find_recent_failure_fingerprint("policy_rejection", limit=3)
 
     findings = []
-    findings.extend(await _safe_collect(generate_dorks(req), "dork-generator", wf, memory))
-    findings.extend(await _safe_collect(check_breach_surface(req), "breach-surface", wf, memory))
-    findings.extend(await _safe_collect(check_username_surface(req), "username-surface", wf, memory))
+    findings.extend(
+        await _safe_collect(generate_dorks(req), "dork-generator", wf, memory)
+    )
+    findings.extend(
+        await _safe_collect(check_breach_surface(req), "breach-surface", wf, memory)
+    )
+    findings.extend(
+        await _safe_collect(check_username_surface(req), "username-surface", wf, memory)
+    )
 
     if previous:
         findings.append(

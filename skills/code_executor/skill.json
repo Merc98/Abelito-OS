@@ -1,0 +1,7 @@
+{
+    "name": "code_executor",
+    "description": "Safe execution of Python code in a sandboxed environment.",
+    "version": "1.0.0",
+    "author": "Abel OS Team",
+    "entry_point": "main.py"
+}

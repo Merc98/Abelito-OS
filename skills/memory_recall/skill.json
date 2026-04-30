@@ -1,0 +1,7 @@
+{
+    "name": "memory_recall",
+    "description": "Long-term memory search and retrieval of stored knowledge.",
+    "version": "1.0.0",
+    "author": "Abel OS Team",
+    "entry_point": "main.py"
+}

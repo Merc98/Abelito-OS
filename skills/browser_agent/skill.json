@@ -1,0 +1,7 @@
+{
+    "name": "browser_agent",
+    "description": "Agentic browser automation for complex multi-step web tasks.",
+    "version": "1.0.0",
+    "author": "Abel OS Team",
+    "entry_point": "main.py"
+}

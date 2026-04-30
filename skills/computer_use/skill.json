@@ -1,0 +1,7 @@
+{
+    "name": "computer_use",
+    "description": "Desktop environment interaction (keyboard, mouse, screenshots).",
+    "version": "1.0.0",
+    "author": "Abel OS Team",
+    "entry_point": "main.py"
+}

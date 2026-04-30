@@ -1,0 +1,8 @@
+{
+  "appId": "com.abelos.plus",
+  "appName": "ABEL OS+",
+  "webDir": "www",
+  "server": {
+    "androidScheme": "https"
+  }
+}
