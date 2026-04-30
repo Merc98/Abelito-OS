@@ -1,0 +1,7 @@
+{
+    "name": "file_manager",
+    "description": "Comprehensive file system operations (read, write, list, delete).",
+    "version": "1.0.0",
+    "author": "Abel OS Team",
+    "entry_point": "main.py"
+}
