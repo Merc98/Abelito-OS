@@ -35,7 +35,7 @@ class MainActivity : AppCompatActivity() {
         errorView = findViewById(R.id.errorView)
 
         val retryButton: Button = findViewById(R.id.retryButton)
-        retryButton.setOnClickListener { reloadDashboard() }
+        retryButton.setOnClickListener { reloadChat() }
 
         toolbar.setNavigationOnClickListener {
             if (webView.canGoBack()) webView.goBack() else finish()
@@ -90,7 +90,7 @@ class MainActivity : AppCompatActivity() {
             }
         }
 
-        reloadDashboard()
+        reloadChat()
     }
 
     override fun onCreateOptionsMenu(menu: Menu): Boolean {
@@ -108,10 +108,10 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    private fun reloadDashboard() {
+    private fun reloadChat() {
         showError(false)
         showLoading(true)
-        webView.loadUrl(DASHBOARD_URL)
+        webView.loadUrl(CHAT_URL)
     }
 
     private fun showLoading(isLoading: Boolean) {
@@ -127,6 +127,6 @@ class MainActivity : AppCompatActivity() {
     }
 
     private companion object {
-        private const val DASHBOARD_URL = "http://10.0.2.2:8080/dashboard"
+        private const val CHAT_URL = "http://10.0.2.2:8080/dashboard"
     }
 }
