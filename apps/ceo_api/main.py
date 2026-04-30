@@ -15,7 +15,7 @@ from nats.aio.client import Client as NATS
 from core.memory import MemoryCore
 from shared.nats_client import connect_nats_from_env
 from shared.schemas import CEOMessage, OsintRequest, TaskEnvelope, WorkflowResponse
-from shared.auth import require_auth
+from .committees import build_chat_reply
 
 logger = logging.getLogger("abel.ceo_api")
 DASHBOARD_HTML = Path(__file__).resolve().parent / "dashboard" / "index.html"
@@ -43,7 +43,7 @@ async def route_task(task: CEOMessage):
     from shared.agent_modes import get_mode
 
     logger.info(f"Routing task: {task.text}")
-
+    
     text = task.text.lower()
     try:
         mode = get_mode(task.mode)
@@ -66,7 +66,6 @@ async def route_task(task: CEOMessage):
 
     logger.info(f"Assigned task to specialist: {specialist} (mode={mode.name})")
     
-    # Store decision in Memory Curator logic
     if _memory:
         _memory.store_knowledge(
             category=f"task_routing_{task.user_id}",
@@ -78,7 +77,6 @@ async def route_task(task: CEOMessage):
 
 @app.get("/memory/curated")
 async def get_curated_knowledge(topic: str):
-    """Memory Curator: Retrieve durable decisions and fixes."""
     if not _memory:
         raise HTTPException(status_code=500, detail="Memory not initialized")
     
@@ -115,11 +113,15 @@ async def ingest_message(msg: CEOMessage) -> WorkflowResponse:
     assert _nats is not None
     await _nats.publish(task.subject, task.model_dump_json().encode("utf-8"))
 
+    # Enriched chat-style payload for dashboard/UI (non-breaking)
+    chat = build_chat_reply(workflow_id, msg.text)
+
     return WorkflowResponse(
         workflow_id=workflow_id,
         accepted=True,
         status="QUEUED",
         detail="Workflow accepted; processing continues asynchronously.",
+        **{k: v for k, v in chat.items() if k not in {"workflow_id", "accepted", "status", "detail"}}
     )
 
 
@@ -350,21 +352,17 @@ async def execute_skill(req: ExecuteSkillRequest) -> Any:
     try:
         skill_instance = registry.load_skill(req.skill)
         
-        # Check if it has the requested action as a method
         action_method = getattr(skill_instance, req.action, None)
         if not action_method or not callable(action_method):
-            # Fallback to 'execute_action' common interface if it exists
             action_method = getattr(skill_instance, "execute_action", None)
             if not action_method:
                 raise HTTPException(status_code=400, detail=f"Action '{req.action}' not found in skill '{req.skill}'")
             
-            # Use execute_action(action, params)
             if inspect.iscoroutinefunction(action_method):
                 return await action_method(req.action, req.params)
             else:
                 return action_method(req.action, req.params)
 
-        # Direct method call with params
         if inspect.iscoroutinefunction(action_method):
             return await action_method(**req.params)
         else:
