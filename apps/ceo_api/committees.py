@@ -51,6 +51,7 @@ def build_tasks(workflow_id: str, text: str, committee_id: str) -> list[dict[str
             "committee": committee_id,
             "agent": agent,
             "description": text,
+            "input": {"text": text},
             "status": "QUEUED",
         }
         for agent in committee["agents"]
