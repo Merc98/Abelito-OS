@@ -17,9 +17,9 @@ class ComputerUseSkill:
             self.pyautogui = pyautogui
             # Disable failsafe for specific automated tasks, but usually keep it on
             self.pyautogui.FAILSAFE = True
-        except ImportError:
+        except Exception as exc:
             self.pyautogui = None
-            logger.warning("pyautogui not installed. computer_use skill will be limited.")
+            logger.warning("pyautogui unavailable (%s). computer_use skill will be limited.", exc)
 
     def get_screen_info(self) -> Dict[str, Any]:
         """Return screen resolution and mouse position."""
