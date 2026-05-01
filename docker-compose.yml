@@ -1,26 +1,33 @@
 services:
-  abel-core:
-    build: .
-    command: uvicorn abel_os.main:app --host 0.0.0.0 --port 8080
-    ports:
-      - "8080:8080"
-    environment:
-      ABEL_ENVIRONMENT: dev
-      ABEL_MOBILE_MODE: RECOMMEND_ONLY
-    depends_on:
-      - redis
-
-  redis:
-    image: redis:7-alpine
-    ports:
-      - "6379:6379"
-
   nats:
     image: nats:2.10-alpine
     command: ["-js"]
     ports:
       - "4222:4222"
       - "8222:8222"
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: abel
+      POSTGRES_PASSWORD: abel
+      POSTGRES_DB: abel_os
+    ports:
+      - "5432:5432"
+
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.15.3
+    environment:
+      discovery.type: single-node
+      xpack.security.enabled: "false"
+      ES_JAVA_OPTS: -Xms512m -Xmx512m
+    ports:
+      - "9200:9200"
 
   qdrant:
     image: qdrant/qdrant:v1.10.1
@@ -36,3 +43,64 @@ services:
     ports:
       - "9000:9000"
       - "9001:9001"
+
+  abel-core:
+    build: .
+    command: uvicorn abel_os.main:app --host 0.0.0.0 --port 8080
+    ports:
+      - "8080:8080"
+    environment:
+      ABEL_ENVIRONMENT: dev
+      ABEL_MOBILE_MODE: RECOMMEND_ONLY
+    depends_on:
+      - redis
+
+  ceo-api:
+    build:
+      context: .
+      dockerfile: apps/ceo_api/Dockerfile
+    environment:
+      NATS_URL: nats://nats:4222
+      MEMORY_DB_PATH: /app/data/abel_memory.db
+    depends_on:
+      - nats
+    ports:
+      - "8080:8080"
+    volumes:
+      - abel_data:/app/data
+
+  worker:
+    build:
+      context: .
+      dockerfile: apps/worker/Dockerfile
+    environment:
+      NATS_URL: nats://nats:4222
+    depends_on:
+      - nats
+
+  osint-orchestrator:
+    build:
+      context: .
+      dockerfile: apps/osint_orchestrator/Dockerfile
+    environment:
+      NATS_URL: nats://nats:4222
+      MEMORY_DB_PATH: /app/data/abel_memory.db
+    depends_on:
+      - nats
+    volumes:
+      - abel_data:/app/data
+
+  sandbox-runtime:
+    build:
+      context: .
+      dockerfile: apps/sandbox_runtime/Dockerfile
+    environment:
+      NATS_URL: nats://nats:4222
+      MEMORY_DB_PATH: /app/data/abel_memory.db
+    depends_on:
+      - nats
+    volumes:
+      - abel_data:/app/data
+
+volumes:
+  abel_data:

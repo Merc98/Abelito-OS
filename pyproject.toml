@@ -1,3 +1,13 @@
+[tool.pyrefly]
+python_interpreter = "C:/Users/beloc/miniconda3/python.exe"
+search_path = ["."]
+
+[tool.pyright]
+pythonPath = "C:/Users/beloc/miniconda3/python.exe"
+venvPath = "C:/Users/beloc/miniconda3"
+pythonVersion = "3.13"
+typeCheckingMode = "basic"
+
 [build-system]
 requires = ["setuptools>=68", "wheel"]
 build-backend = "setuptools.build_meta"

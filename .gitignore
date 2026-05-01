@@ -1,9 +1,24 @@
+```
+# Backup files
+.evolution_backups/
+
+# Database files
+*.db
+
+# Python cache
 __pycache__/
 *.py[cod]
+data/
+.android-sdk/
+.android-cmdline-tools/
+mobile/android-dashboard/.gradle/
+mobile/android-dashboard/build/
+mobile/android-dashboard/local.properties
+mobile/android-dashboard/app/build/
+dist/
 *.egg-info/
 .venv/
 .pytest_cache/
 .coverage
-dist/
 build/
 .env
