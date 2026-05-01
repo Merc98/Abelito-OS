@@ -1,0 +1,5 @@
+mobile_screen_agent:
+  default_mode: recommend_only
+  thresholds:
+    min_parse_confidence: 0.80
+    min_action_confidence: 0.90
