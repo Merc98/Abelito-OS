@@ -99,27 +99,61 @@ install_common() {
 }
 
 # Verificar herramientas externas
+print_optional_tool_instructions() {
+    local tool="$1"
+    case "$tool" in
+        adb)
+            echo "      - Linux: sudo apt install android-tools-adb | sudo dnf install android-tools"
+            echo "      - macOS: brew install android-platform-tools"
+            echo "      - Windows: instalar Android Platform Tools (adb)"
+            echo "      - URL: https://developer.android.com/tools/adb"
+            ;;
+        appium)
+            echo "      - Requiere Node.js y npm"
+            echo "      - Comando: npm install -g appium"
+            echo "      - URL: https://appium.io/docs/en/latest/quickstart/"
+            ;;
+        frida)
+            echo "      - Python: pip install frida-tools"
+            echo "      - URL: https://frida.re/docs/installation/"
+            ;;
+        ollama)
+            echo "      - Linux/macOS: curl -fsSL https://ollama.com/install.sh | sh"
+            echo "      - Windows: descargar instalador oficial"
+            echo "      - URL: https://ollama.com/download"
+            ;;
+    esac
+}
+
 check_external_tools() {
     echo ""
     echo "🔍 Verificando herramientas externas..."
-    
+
     tools_needed=("adb" "appium" "frida" "ollama")
     tools_missing=()
-    
+
     for tool in "${tools_needed[@]}"; do
-        if command -v $tool &> /dev/null; then
+        if command -v "$tool" &> /dev/null; then
             echo "   ✅ $tool encontrado"
         else
             echo "   ⚠️  $tool no encontrado (opcional)"
-            tools_missing+=($tool)
+            tools_missing+=("$tool")
         fi
     done
-    
+
     if [ ${#tools_missing[@]} -gt 0 ]; then
         echo ""
-        echo "💡 Consejo: Algunas herramientas opcionales no están instaladas."
-        echo "   El sistema funcionará igual, pero puede sintetizar capacidades alternativas."
-        echo "   Para instalar ADB: https://developer.android.com/studio/command-line/adb"
+        echo "💡 Herramientas opcionales faltantes detectadas."
+        echo "   Abelito OS seguirá funcionando con rutas de fallback, pero con capacidades reducidas:"
+        echo "   - Sin adb/appium: se desactiva automatización HID móvil."
+        echo "   - Sin frida: se desactiva inyección dinámica de binarios."
+        echo "   - Sin ollama: se usa solo integración remota de IA (si está configurada)."
+        echo ""
+        echo "🛠️  Instalación sugerida por herramienta:"
+        for tool in "${tools_missing[@]}"; do
+            echo "   • $tool"
+            print_optional_tool_instructions "$tool"
+        done
     fi
 }
 
