@@ -11,6 +11,7 @@ from dataclasses import dataclass
 from enum import Enum
 from pathlib import Path
 from typing import Any
+from fastapi import Header, HTTPException
 
 # ── Constants ──────────────────────────────────────────────────────────────────
 
@@ -161,7 +162,7 @@ class UserStore:
 
 # ── FastAPI dependency (for protecting endpoints) ─────────────────────────────
 
-def require_auth(authorization: str = "") -> TokenPayload:
+def require_auth(authorization: str | None = Header(default=None)) -> TokenPayload:
     """FastAPI dependency to extract and validate JWT from Authorization header.
 
     Usage in a route:
@@ -169,23 +170,20 @@ def require_auth(authorization: str = "") -> TokenPayload:
         async def protected(auth: TokenPayload = Depends(require_auth)):
             ...
     """
-    if not authorization.startswith("Bearer "):
-        from fastapi import HTTPException
+    if not authorization or not authorization.startswith("Bearer "):
         raise HTTPException(status_code=401, detail="Missing or invalid Authorization header")
     token = authorization[7:]
     try:
         return verify_token(token)
     except ValueError as e:
-        from fastapi import HTTPException
         raise HTTPException(status_code=401, detail=str(e))
 
 
 def require_role(*roles: Role):
     """Factory for a FastAPI dependency that checks the user's role."""
-    def checker(authorization: str = "") -> TokenPayload:
+    def checker(authorization: str | None = Header(default=None)) -> TokenPayload:
         payload = require_auth(authorization)
         if payload.role not in roles:
-            from fastapi import HTTPException
             raise HTTPException(status_code=403, detail=f"Requires one of: {[r.value for r in roles]}")
         return payload
     return checker
