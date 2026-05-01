@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 from fastapi import FastAPI
+from ui.app import router as ui_router
+from suites.registry import load_suite_registries
 from pydantic import BaseModel
 
 from abel_os.ceo_agent import CEOAgent
@@ -9,6 +11,8 @@ from abel_os.mobile.decision_engine import MobileDecisionEngine
 from abel_os.schemas import MobileDecision, MobileOffer, MobileMode, WorkflowPlan
 
 app = FastAPI(title=settings.app_name, version="0.1.0")
+app.include_router(ui_router)
+SUITES = load_suite_registries()
 ceo = CEOAgent()
 mobile_engine = MobileDecisionEngine(blocked_zones={"zona roja", "high risk"})
 
