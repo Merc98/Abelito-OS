@@ -187,6 +187,23 @@ EOF
     echo "   ✅ Directorios creados"
 }
 
+install_mobile_deps() {
+    echo ""
+    echo "📱 Verificando stack móvil (Appium + drivers + ADB)..."
+    if [ "${CONFIRM_INSTALL_MOBILE_DEPS:-false}" != "true" ]; then
+        echo "   ℹ️  Saltado (defina CONFIRM_INSTALL_MOBILE_DEPS=true para instalar automáticamente)."
+        return
+    fi
+    pip show Appium-Python-Client >/dev/null 2>&1 || pip install Appium-Python-Client
+    pip show uiautomator2 >/dev/null 2>&1 || pip install uiautomator2
+    if command -v npm >/dev/null 2>&1; then
+        npm list -g appium >/dev/null 2>&1 || npm install -g appium
+        appium driver list --installed | grep -q uiautomator2 || appium driver install uiautomator2
+        appium driver list --installed | grep -q xcuitest || appium driver install xcuitest
+    fi
+    command -v adb >/dev/null 2>&1 || echo "   ⚠️ adb no encontrado. Instale Android platform-tools."
+}
+
 # Mostrar instrucciones de uso
 show_usage() {
     echo ""
@@ -242,6 +259,7 @@ esac
 
 # Pasos comunes
 check_external_tools
+install_mobile_deps
 setup_environment
 show_usage
 
