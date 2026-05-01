@@ -1,3 +1,11 @@
+```
+# Backup files
+.evolution_backups/
+
+# Database files
+*.db
+
+# Python cache
 __pycache__/
 *.py[cod]
 data/
