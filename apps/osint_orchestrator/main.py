@@ -20,16 +20,11 @@ async def run() -> None:
 
         try:
             req = OsintRequest.model_validate(task.payload)
+            # run_osint already records policy failures internally when workflow_id is given;
+            # do NOT call memory.record_failure again here for REJECTED_POLICY to avoid
+            # duplicate failure rows that corrupt audit history and recovery metrics.
             report = await run_osint(req, workflow_id=task.workflow_id)
-            if report.status == "REJECTED_POLICY":
-                memory.record_failure(
-                    task.workflow_id,
-                    "policy_validation",
-                    report.summary,
-                    fingerprint="policy_rejection",
-                    payload=req.model_dump(),
-                )
-            else:
+            if report.status != "REJECTED_POLICY":
                 memory.record_event(
                     task.workflow_id,
                     "orchestrator",

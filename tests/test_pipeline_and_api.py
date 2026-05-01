@@ -71,7 +71,11 @@ class TestPipelineAndAPI(unittest.IsolatedAsyncioTestCase):
 
     async def test_dashboard_file_is_available(self) -> None:
         response = await ceo_api.dashboard()
-        self.assertTrue(str(response.path).endswith("apps/ceo_api/dashboard/index.html"))
+        # Use Path.parts for cross-platform compatibility (Windows uses backslashes)
+        from pathlib import Path
+        parts = Path(response.path).parts
+        self.assertIn("dashboard", parts)
+        self.assertEqual(parts[-1], "index.html")
 
 
 if __name__ == "__main__":

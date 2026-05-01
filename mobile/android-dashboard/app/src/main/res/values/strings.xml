@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Abel Dashboard</string>
+    <string name="error_title">No se pudo cargar</string>
+    <string name="error_subtitle">Revisa que el server esté corriendo y vuelve a intentar.</string>
+    <string name="retry">Reintentar</string>
+    <string name="refresh">Refrescar</string>
+</resources>
+

@@ -1,0 +1,46 @@
+{
+  "version": 1,
+  "entries": [
+    {
+      "id": "6b865f82-1f16-42f1-aa50-dd980c0ca873",
+      "scanHash": "b8479ef65c8bd461df3eb9e7d4cb187070b25cd77aadecf058d7a7861303921c",
+      "projectId": "05951f804fd692ac",
+      "result": {
+        "schemaVersion": "scan-report.v1",
+        "projectPath": "c:\\Users\\beloc\\Music\\Abelito-OS",
+        "projectName": "Abelito-OS",
+        "scanType": "full",
+        "status": "completed",
+        "source": "vscode",
+        "sourceMetadata": {
+          "version": "25.0.1"
+        },
+        "findings": [],
+        "summary": {
+          "critical": 0,
+          "high": 0,
+          "medium": 0,
+          "low": 0,
+          "info": 0,
+          "total": 0,
+          "durationMs": 12855,
+          "healthScore": 100,
+          "verdict": "SHIP",
+          "source": "vscode",
+          "sourceMetadata": {
+            "version": "25.0.1"
+          }
+        },
+        "artifacts": [],
+        "warnings": [],
+        "errors": [],
+        "timestamp": "2026-04-14T08:42:04.060Z",
+        "completedAt": "2026-04-14T08:42:04.060Z"
+      },
+      "enqueuedAt": "2026-04-14T08:42:09.922Z",
+      "retryCount": 0,
+      "status": "pending"
+    }
+  ],
+  "updatedAt": "2026-04-14T09:16:37.927Z"
+}
