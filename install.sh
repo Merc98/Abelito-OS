@@ -5,6 +5,8 @@
 
 set -e
 
+AUTO_INSTALL_OPTIONAL_TOOLS="${AUTO_INSTALL_OPTIONAL_TOOLS:-false}"
+
 echo "🚀 Abelito OS v5.0 - Instalador Universal"
 echo "=========================================="
 
@@ -80,7 +82,12 @@ install_common() {
     
     # Crear entorno virtual
     if [ ! -d "venv" ]; then
-        python3 -m venv venv
+        PYTHON_BIN=$(command -v python3 || command -v python)
+        if [ -z "$PYTHON_BIN" ]; then
+            echo "❌ Python 3 no encontrado. Instale Python 3.8+ e intente de nuevo."
+            exit 1
+        fi
+        "$PYTHON_BIN" -m venv venv
     fi
     
     # Activar entorno

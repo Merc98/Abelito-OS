@@ -8,7 +8,7 @@ from contextlib import asynccontextmanager
 from pathlib import Path
 from typing import Any
 
-from fastapi import Depends, FastAPI, HTTPException
+from fastapi import Depends, FastAPI, HTTPException, WebSocket, WebSocketDisconnect
 from fastapi.responses import FileResponse
 from nats.aio.client import Client as NATS
 
@@ -194,6 +194,24 @@ async def start_osint(req: OsintRequest) -> WorkflowResponse:
         detail="OSINT workflow queued in RECOMMEND/HITL-safe mode.",
     )
 
+
+
+
+@app.websocket("/v1/ws/workflow/{workflow_id}")
+async def workflow_updates(websocket: WebSocket, workflow_id: str):
+    await websocket.accept()
+    if not _memory:
+        await websocket.send_json({"error": "memory core unavailable"})
+        await websocket.close()
+        return
+
+    try:
+        while True:
+            snapshot = _memory.reconstruct_workflow(workflow_id)
+            await websocket.send_json(snapshot)
+            await asyncio.sleep(1.0)
+    except WebSocketDisconnect:
+        return
 
 @app.get("/v1/memory/{workflow_id}")
 async def memory_snapshot(workflow_id: str) -> dict[str, Any]:
