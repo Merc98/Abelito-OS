@@ -38,7 +38,6 @@ class CEOMessage(BaseModel):
     user_id: str
     text: str
     channel: str = "api"
-    mode: str = "default"
 
 
 class WorkflowResponse(BaseModel):
@@ -46,12 +45,6 @@ class WorkflowResponse(BaseModel):
     accepted: bool
     status: str
     detail: str
-    reply: str | None = None
-    committee: str | None = None
-    committee_name: str | None = None
-    agents: list[str] = Field(default_factory=list)
-    tasks: list[dict[str, Any]] = Field(default_factory=list)
-    results: list[dict[str, Any]] = Field(default_factory=list)
 
 
 class OsintRequest(BaseModel):
