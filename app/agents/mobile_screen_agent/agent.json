@@ -1,0 +1,24 @@
+{
+  "name": "MobileScreenAgent",
+  "version": "0.1.0",
+  "category": "mobile_automation",
+  "description": "Reads mobile UI/screen state, parses structured offers, scores actions, and optionally executes supervised taps under governance.",
+  "entrypoint": "agents.mobile_screen_agent.run:run",
+  "permissions_required": [
+    "mobile:read_ui_tree",
+    "mobile:screenshot",
+    "graph:write",
+    "audit:write"
+  ],
+  "restricted_permissions": [
+    "mobile:tap",
+    "mobile:tap_accept_decline",
+    "mobile:adb_shell",
+    "mobile:wda_control"
+  ],
+  "default_mode": "recommend_only",
+  "risk_level": "high",
+  "requires_governance": true,
+  "requires_audit_log": true,
+  "requires_kill_switch_for_execution": true
+}
