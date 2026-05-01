@@ -68,9 +68,27 @@
 </div>
 <script>
 let lastWorkflow=null;
+let wfSocket=null;
 async function j(url,options){const r=await fetch(url,options);const data=await r.json();if(!r.ok)throw new Error(JSON.stringify(data));return data;}
 async function refresh(){try{const h=await j('/health');const lanes=await j('/v1/lanes');document.getElementById('api-status').textContent='API: '+h.status;document.getElementById('p-health').textContent='health '+h.status;document.getElementById('p-lanes').textContent=Object.keys(lanes).length+' lanes';}catch(e){document.getElementById('api-status').textContent='API: error';document.getElementById('p-health').textContent='health error';}}
-async function sendMsg(){const inp=document.getElementById('msg-in');const val=inp.value.trim();if(!val)return;inp.value='';inp.style.height='auto';addMsg(val,'user');addExec('→ CEO API recibió la orden. Enrutando por comités del backend...');const typ=document.createElement('div');typ.className='bbl bbl-a';typ.innerHTML='<div class="typing-ind"><span></span><span></span><span></span></div>';document.getElementById('msgs').appendChild(typ);scrollMsgs();try{const out=await j('/v1/message',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({user_id:'dashboard-chat',text:val,channel:'dashboard-chat'})});typ.remove();lastWorkflow=out.workflow_id;document.getElementById('last-wf').textContent=lastWorkflow;document.getElementById('p-wf').textContent='workflow: '+lastWorkflow;document.getElementById('p-committee').textContent='comité: '+(out.committee||'n/a');const reply=out.reply||out.detail||'Workflow aceptado';addMsg(reply+'\n\nworkflow_id: '+out.workflow_id+'\nstatus: '+out.status,'ai');if(out.committee||out.agents?.length){addExec('→ Comité: '+(out.committee_name||out.committee||'n/a')+'\n→ Agentes: '+((out.agents||[]).join(', ')||'n/a'));}if(out.tasks?.length){addWb('var(--bl)','TASKS',JSON.stringify(out.tasks,null,2));}if(out.results?.length){addWb('var(--gr)','DISPATCH',JSON.stringify(out.results,null,2));}addWb('var(--pu)','CEO API','Aceptado: '+out.workflow_id+' · '+out.status+' · '+(out.committee||'sin comité'));pollWorkflow(out.workflow_id,0);}catch(e){typ.remove();addMsg('Error hablando con CEO API: '+e.message,'sys');addWb('var(--re)','ERROR',e.message);}}
+async function sendMsg(){const inp=document.getElementById('msg-in');const val=inp.value.trim();if(!val)return;inp.value='';inp.style.height='auto';addMsg(val,'user');addExec('→ CEO API recibió la orden. Enrutando por comités del backend...');const typ=document.createElement('div');typ.className='bbl bbl-a';typ.innerHTML='<div class="typing-ind"><span></span><span></span><span></span></div>';document.getElementById('msgs').appendChild(typ);scrollMsgs();try{const out=await j('/v1/message',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({user_id:'dashboard-chat',text:val,channel:'dashboard-chat'})});typ.remove();lastWorkflow=out.workflow_id;document.getElementById('last-wf').textContent=lastWorkflow;document.getElementById('p-wf').textContent='workflow: '+lastWorkflow;document.getElementById('p-committee').textContent='comité: '+(out.committee||'n/a');const reply=out.reply||out.detail||'Workflow aceptado';addMsg(reply+'\n\nworkflow_id: '+out.workflow_id+'\nstatus: '+out.status,'ai');if(out.committee||out.agents?.length){addExec('→ Comité: '+(out.committee_name||out.committee||'n/a')+'\n→ Agentes: '+((out.agents||[]).join(', ')||'n/a'));}if(out.tasks?.length){addWb('var(--bl)','TASKS',JSON.stringify(out.tasks,null,2));}if(out.results?.length){addWb('var(--gr)','DISPATCH',JSON.stringify(out.results,null,2));}addWb('var(--pu)','CEO API','Aceptado: '+out.workflow_id+' · '+out.status+' · '+(out.committee||'sin comité'));startWorkflowStream(out.workflow_id);pollWorkflow(out.workflow_id,0);}catch(e){typ.remove();addMsg('Error hablando con CEO API: '+e.message,'sys');addWb('var(--re)','ERROR',e.message);}}
+
+function startWorkflowStream(id){
+  if(!id) return;
+  if(wfSocket){ try{wfSocket.close();}catch(_e){} }
+  const proto=location.protocol==='https:'?'wss':'ws';
+  wfSocket=new WebSocket(`${proto}://${location.host}/v1/ws/workflow/${encodeURIComponent(id)}`);
+  wfSocket.onopen=()=>addWb('var(--ac)','STREAM','Canal en tiempo real activo para '+id);
+  wfSocket.onmessage=(ev)=>{
+    try{
+      const data=JSON.parse(ev.data);
+      addWb('var(--gr)','STREAM',JSON.stringify(data,null,2).slice(0,1200));
+    }catch(e){ addWb('var(--am)','STREAM','Payload no-JSON: '+String(ev.data).slice(0,200)); }
+  };
+  wfSocket.onerror=()=>addWb('var(--re)','STREAM','Error en canal en tiempo real');
+  wfSocket.onclose=()=>addWb('var(--t3)','STREAM','Canal cerrado');
+}
+
 async function pollWorkflow(id,n){if(!id||n>10)return;try{const mem=await j('/v1/memory/'+encodeURIComponent(id));addWb('var(--gr)','MEMORY',JSON.stringify(mem,null,2).slice(0,1200));const txt=JSON.stringify(mem);if(!/COMPLETED|FAILED|ERROR/.test(txt))setTimeout(()=>pollWorkflow(id,n+1),2000);}catch(e){if(n<3)setTimeout(()=>pollWorkflow(id,n+1),2000);}}
 function addMsg(text,role){const c=document.getElementById('msgs');const d=document.createElement('div');if(role==='user'){d.className='bbl bbl-u';d.textContent=text;}else if(role==='sys'){d.className='bbl bbl-sys';d.textContent=text;}else{d.className='bbl bbl-a';const h=document.createElement('div');h.className='bbl-hdr';h.textContent='ABELITO OS';d.appendChild(h);const t=document.createElement('div');t.textContent=text;d.appendChild(t);}c.appendChild(d);scrollMsgs();}
 function addExec(t){const c=document.getElementById('msgs');const d=document.createElement('div');d.className='bbl bbl-exec';d.textContent=t;c.appendChild(d);scrollMsgs();}
