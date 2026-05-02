@@ -160,10 +160,6 @@ check_external_tools() {
         for tool in "${tools_missing[@]}"; do
             echo "   • $tool"
             print_optional_tool_instructions "$tool"
-            if [ "$AUTO_INSTALL_OPTIONAL_TOOLS" = "true" ] && [ "$tool" = "frida" ]; then
-                echo "      - Auto-instalando frida-tools en el venv..."
-                pip install frida-tools || true
-            fi
         done
     fi
 }
