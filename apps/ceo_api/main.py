@@ -14,6 +14,7 @@ from fastapi.responses import FileResponse
 
 from core.memory import MemoryCore
 from shared.nats_client import connect_nats_from_env
+from shared.auth import require_auth
 from shared.schemas import CEOMessage, OsintRequest, TaskEnvelope, WorkflowResponse
 from .committees import COMMITTEES, select_committee, build_chat_reply
 
