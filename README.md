@@ -246,6 +246,47 @@ abelito-os/
 
 ---
 
+
+## 🧩 Modularidad e Integración
+
+La arquitectura está separada por módulos para facilitar extensión y mantenimiento:
+
+- `core/`: orquestación, memoria y runtime base.
+- `apps/`: capacidades especializadas que exponen comandos/módulos ejecutables.
+- `skills/`: habilidades reutilizables de ejecución (web, archivos, navegación, etc.).
+
+### Flujo de integración
+
+1. El `core/orchestrator.py` interpreta la intención.
+2. Resuelve qué app/skill aplica según la tarea y dependencias disponibles.
+3. Ejecuta en paralelo cuando no hay conflictos de recursos.
+4. Consolida salida en formato de respuesta única al usuario.
+
+### Añadir una nueva capacidad
+
+1. Crear paquete en `apps/<nombre_capacidad>/`.
+2. Definir punto de entrada ejecutable (`main.py` o módulo equivalente).
+3. Registrar documentación y ejemplos en README + `docs/`.
+4. Agregar pruebas en `tests/` para flujos nominales y de error.
+
+## 🧪 Ejemplo funcional mínimo
+
+Ejecuta este ejemplo real para validar orquestación:
+
+```bash
+python - <<'PY'
+import asyncio
+from core.orchestrator import Orchestrator
+
+async def demo():
+    orch = Orchestrator()
+    out = await orch.process_intention("Busca grants para startups de IA")
+    print(out)
+
+asyncio.run(demo())
+PY
+```
+
 ## 🔒 Seguridad
 
 - **Encriptación:** AES-256 para datos sensibles
