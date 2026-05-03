@@ -351,3 +351,20 @@ MIT License - ver [LICENSE](LICENSE) para detalles
   1. Ejecuta `make apk`.
   2. Si no existe SDK, el script bootstrappea `cmdline-tools` + `platforms;android-34` + `build-tools;34.0.0` en `./.android-sdk`.
   3. APK esperada: `mobile/android-dashboard/app/build/outputs/apk/debug/app-debug.apk`.
+
+
+## 🟢 Inicio único real (bootstrap)
+
+Para evitar piezas sueltas, inicia todo desde un solo punto:
+
+```bash
+python bootstrap.py
+```
+
+Modos:
+
+- `ABEL_RUN=app python bootstrap.py` -> levanta `app.abel_os.main:app`
+- `ABEL_RUN=core python bootstrap.py` -> levanta `abel_core.main:app`
+- `ABEL_RUN=none python bootstrap.py` -> solo health-checks locales
+
+El bootstrap valida binarios base, crea directorios, reporta estado de NATS y luego arranca el servidor.
