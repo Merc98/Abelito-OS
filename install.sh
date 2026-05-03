@@ -5,6 +5,8 @@
 
 set -e
 
+AUTO_INSTALL_OPTIONAL_TOOLS="${AUTO_INSTALL_OPTIONAL_TOOLS:-false}"
+
 echo "🚀 Abelito OS v5.0 - Instalador Universal"
 echo "=========================================="
 
@@ -80,7 +82,12 @@ install_common() {
     
     # Crear entorno virtual
     if [ ! -d "venv" ]; then
-        python3 -m venv venv
+        PYTHON_BIN=$(command -v python3 || command -v python)
+        if [ -z "$PYTHON_BIN" ]; then
+            echo "❌ Python 3 no encontrado. Instale Python 3.8+ e intente de nuevo."
+            exit 1
+        fi
+        "$PYTHON_BIN" -m venv venv
     fi
     
     # Activar entorno
@@ -99,27 +106,65 @@ install_common() {
 }
 
 # Verificar herramientas externas
+print_optional_tool_instructions() {
+    local tool="$1"
+    case "$tool" in
+        adb)
+            echo "      - Linux: sudo apt install android-tools-adb | sudo dnf install android-tools"
+            echo "      - macOS: brew install android-platform-tools"
+            echo "      - Windows: instalar Android Platform Tools (adb)"
+            echo "      - URL: https://developer.android.com/tools/adb"
+            ;;
+        appium)
+            echo "      - Requiere Node.js y npm"
+            echo "      - Comando: npm install -g appium"
+            echo "      - URL: https://appium.io/docs/en/latest/quickstart/"
+            ;;
+        frida)
+            echo "      - Python: pip install frida-tools"
+            echo "      - URL: https://frida.re/docs/installation/"
+            ;;
+        ollama)
+            echo "      - Linux/macOS: curl -fsSL https://ollama.com/install.sh | sh"
+            echo "      - Windows: descargar instalador oficial"
+            echo "      - URL: https://ollama.com/download"
+            ;;
+    esac
+}
+
 check_external_tools() {
     echo ""
     echo "🔍 Verificando herramientas externas..."
-    
+
     tools_needed=("adb" "appium" "frida" "ollama")
     tools_missing=()
-    
+
     for tool in "${tools_needed[@]}"; do
-        if command -v $tool &> /dev/null; then
+        if command -v "$tool" &> /dev/null; then
             echo "   ✅ $tool encontrado"
         else
             echo "   ⚠️  $tool no encontrado (opcional)"
-            tools_missing+=($tool)
+            tools_missing+=("$tool")
         fi
     done
-    
+
     if [ ${#tools_missing[@]} -gt 0 ]; then
         echo ""
-        echo "💡 Consejo: Algunas herramientas opcionales no están instaladas."
-        echo "   El sistema funcionará igual, pero puede sintetizar capacidades alternativas."
-        echo "   Para instalar ADB: https://developer.android.com/studio/command-line/adb"
+        echo "💡 Herramientas opcionales faltantes detectadas."
+        echo "   Abelito OS seguirá funcionando con rutas de fallback, pero con capacidades reducidas:"
+        echo "   - Sin adb/appium: se desactiva automatización HID móvil."
+        echo "   - Sin frida: se desactiva inyección dinámica de binarios."
+        echo "   - Sin ollama: se usa solo integración remota de IA (si está configurada)."
+        echo ""
+        echo "🛠️  Instalación sugerida por herramienta:"
+        for tool in "${tools_missing[@]}"; do
+            echo "   • $tool"
+            print_optional_tool_instructions "$tool"
+            if [ "$AUTO_INSTALL_OPTIONAL_TOOLS" = "true" ] && [ "$tool" = "frida" ]; then
+                echo "      - Auto-instalando frida-tools en el venv..."
+                pip install frida-tools || true
+            fi
+        done
     fi
 }
 
@@ -144,6 +189,23 @@ EOF
     # Crear directorios necesarios
     mkdir -p data logs backups
     echo "   ✅ Directorios creados"
+}
+
+install_mobile_deps() {
+    echo ""
+    echo "📱 Verificando stack móvil (Appium + drivers + ADB)..."
+    if [ "${CONFIRM_INSTALL_MOBILE_DEPS:-false}" != "true" ]; then
+        echo "   ℹ️  Saltado (defina CONFIRM_INSTALL_MOBILE_DEPS=true para instalar automáticamente)."
+        return
+    fi
+    pip show Appium-Python-Client >/dev/null 2>&1 || pip install Appium-Python-Client
+    pip show uiautomator2 >/dev/null 2>&1 || pip install uiautomator2
+    if command -v npm >/dev/null 2>&1; then
+        npm list -g appium >/dev/null 2>&1 || npm install -g appium
+        appium driver list --installed | grep -q uiautomator2 || appium driver install uiautomator2
+        appium driver list --installed | grep -q xcuitest || appium driver install xcuitest
+    fi
+    command -v adb >/dev/null 2>&1 || echo "   ⚠️ adb no encontrado. Instale Android platform-tools."
 }
 
 # Mostrar instrucciones de uso
@@ -201,6 +263,7 @@ esac
 
 # Pasos comunes
 check_external_tools
+install_mobile_deps
 setup_environment
 show_usage
 

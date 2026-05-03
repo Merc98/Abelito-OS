@@ -246,6 +246,47 @@ abelito-os/
 
 ---
 
+
+## 🧩 Modularidad e Integración
+
+La arquitectura está separada por módulos para facilitar extensión y mantenimiento:
+
+- `core/`: orquestación, memoria y runtime base.
+- `apps/`: capacidades especializadas que exponen comandos/módulos ejecutables.
+- `skills/`: habilidades reutilizables de ejecución (web, archivos, navegación, etc.).
+
+### Flujo de integración
+
+1. El `core/orchestrator.py` interpreta la intención.
+2. Resuelve qué app/skill aplica según la tarea y dependencias disponibles.
+3. Ejecuta en paralelo cuando no hay conflictos de recursos.
+4. Consolida salida en formato de respuesta única al usuario.
+
+### Añadir una nueva capacidad
+
+1. Crear paquete en `apps/<nombre_capacidad>/`.
+2. Definir punto de entrada ejecutable (`main.py` o módulo equivalente).
+3. Registrar documentación y ejemplos en README + `docs/`.
+4. Agregar pruebas en `tests/` para flujos nominales y de error.
+
+## 🧪 Ejemplo funcional mínimo
+
+Ejecuta este ejemplo real para validar orquestación:
+
+```bash
+python - <<'PY'
+import asyncio
+from core.orchestrator import Orchestrator
+
+async def demo():
+    orch = Orchestrator()
+    out = await orch.process_intention("Busca grants para startups de IA")
+    print(out)
+
+asyncio.run(demo())
+PY
+```
+
 ## 🔒 Seguridad
 
 - **Encriptación:** AES-256 para datos sensibles
@@ -310,3 +351,20 @@ MIT License - ver [LICENSE](LICENSE) para detalles
   1. Ejecuta `make apk`.
   2. Si no existe SDK, el script bootstrappea `cmdline-tools` + `platforms;android-34` + `build-tools;34.0.0` en `./.android-sdk`.
   3. APK esperada: `mobile/android-dashboard/app/build/outputs/apk/debug/app-debug.apk`.
+
+
+## 🟢 Inicio único real (bootstrap)
+
+Para evitar piezas sueltas, inicia todo desde un solo punto:
+
+```bash
+python bootstrap.py
+```
+
+Modos:
+
+- `ABEL_RUN=app python bootstrap.py` -> levanta `app.abel_os.main:app`
+- `ABEL_RUN=core python bootstrap.py` -> levanta `abel_core.main:app`
+- `ABEL_RUN=none python bootstrap.py` -> solo health-checks locales
+
+El bootstrap valida binarios base, crea directorios, reporta estado de NATS y luego arranca el servidor.
