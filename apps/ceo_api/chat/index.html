@@ -1,0 +1,427 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Abelito OS · Chat con Artefactos</title>
+  <style>
+    *{box-sizing:border-box;margin:0;padding:0}
+    :root{--bg:#07090f;--bg2:#0b0e1a;--bg3:#0f1220;--t:#d0dce8;--t2:#7a90a8;--t3:#3d5268;--ac:#00ffcc;--re:#ff4466;--am:#ffaa00;--bl:#4499ff;--gr:#00cc88;--pu:#bb77ff;--b:rgba(255,255,255,.07);--b2:rgba(255,255,255,.13)}
+    html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--t);font-family:system-ui,-apple-system,sans-serif}
+    #shell{display:grid;grid-template-columns:1fr 450px;height:100vh}
+    #chat-panel{display:flex;flex-direction:column;border-right:1px solid var(--b);background:var(--bg)}
+    #topbar{height:50px;background:var(--bg2);border-bottom:1px solid var(--b);display:flex;align-items:center;padding:0 16px;gap:12px}
+    .logo{font-size:14px;font-weight:800;color:var(--ac);letter-spacing:.2em}
+    .tab{padding:6px 14px;border-radius:6px;font-size:12px;color:var(--t2);cursor:pointer;transition:.2s;border:1px solid transparent}.tab:hover{background:var(--b)}.tab.on{background:rgba(0,255,204,.1);color:var(--ac);border-color:rgba(0,255,204,.3)}
+    .spacer{flex:1}.status{font-size:11px;color:var(--t3);padding:4px 10px;background:var(--b);border-radius:12px}
+    #msgs{flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:12px}#msgs::-webkit-scrollbar{width:4px}#msgs::-webkit-scrollbar-thumb{background:var(--t3);border-radius:2px}
+    .msg{max-width:85%;animation:fi .25s ease-out;display:flex;flex-direction:column;gap:6px}.msg-u{align-self:flex-end}.msg-a{align-self:flex-start}
+    .msg-hdr{font-size:10px;color:var(--t3);font-weight:700;letter-spacing:.05em;display:flex;align-items:center;gap:6px}
+    .msg-content{padding:12px 14px;border-radius:12px;font-size:13px;line-height:1.7;white-space:pre-wrap}
+    .msg-u .msg-content{background:rgba(255,255,255,.08);border:1px solid var(--b2);border-radius:12px 12px 4px 12px}
+    .msg-a .msg-content{background:rgba(0,255,204,.06);border:1px solid rgba(0,255,204,.14);border-radius:12px 12px 12px 4px;color:var(--t2)}
+    .msg-sys{align-self:center;font-size:11px;color:var(--t3);background:var(--b);border-radius:20px;padding:4px 12px;text-align:center}
+    .typing{display:inline-flex;gap:4px;padding:4px 0}.typing span{width:5px;height:5px;border-radius:50%;background:var(--t3);animation:ty 1.1s infinite}.typing span:nth-child(2){animation-delay:.18s}.typing span:nth-child(3){animation-delay:.36s}@keyframes ty{0%,60%,100%{transform:translateY(0)}30%{transform:translateY(-5px)}}
+    #input-area{padding:14px;border-top:1px solid var(--b);background:var(--bg2)}
+    #input-row{display:flex;gap:8px;align-items:flex-end;background:rgba(255,255,255,.04);border:1px solid var(--b2);border-radius:14px;padding:8px 10px;transition:.2s}#input-row:focus-within{border-color:rgba(0,255,204,.35);box-shadow:0 0 0 2px rgba(0,255,204,.08)}
+    #msg-in{flex:1;background:transparent;border:none;color:var(--t);font-size:13px;resize:none;outline:none;max-height:120px;min-height:22px;font-family:inherit;line-height:1.6;padding:4px}#msg-in::placeholder{color:var(--t3)}
+    #send-btn{width:36px;height:36px;border-radius:10px;background:linear-gradient(135deg,rgba(0,255,204,.15),rgba(0,255,204,.08));border:1px solid rgba(0,255,204,.35);color:var(--ac);font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:.15s}#send-btn:hover{background:linear-gradient(135deg,rgba(0,255,204,.25),rgba(0,255,204,.12));transform:scale(1.05)}
+    #quick-cmds{margin-top:8px;display:flex;gap:6px;flex-wrap:wrap}
+    .qcmd{font-size:10px;padding:5px 11px;border-radius:18px;border:1px solid var(--b);color:var(--t3);cursor:pointer;transition:.15s;background:transparent;font-family:inherit;white-space:nowrap;display:flex;align-items:center;gap:4px}.qcmd:hover{border-color:var(--ac);color:var(--ac);background:rgba(0,255,204,.06)}
+    #artifact-panel{display:flex;flex-direction:column;background:var(--bg2);overflow:hidden}
+    #artifact-header{height:50px;border-bottom:1px solid var(--b);display:flex;align-items:center;justify-content:space-between;padding:0 14px;flex-shrink:0}
+    #artifact-title{font-size:12px;font-weight:700;color:var(--t2);display:flex;align-items:center;gap:8px}
+    #artifact-actions{display:flex;gap:6px}
+    .action-btn{width:28px;height:28px;border-radius:6px;background:var(--b);border:1px solid var(--b2);color:var(--t2);font-size:12px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:.15s}.action-btn:hover{background:var(--b2);color:var(--t)}
+    #artifact-list{flex:1;overflow-y:auto;padding:10px;display:flex;flex-direction:column;gap:6px}
+    #artifact-content{flex:1;overflow:auto;padding:0;background:var(--bg)}
+    #artifact-viewer{width:100%;height:100%;border:none;background:var(--bg)}
+    .artifact-placeholder{display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;color:var(--t3);text-align:center;padding:20px}
+    .artifact-placeholder svg{width:64px;height:64px;margin-bottom:16px;opacity:.3}
+    .artifact-item{border-left:3px solid var(--ac);padding:10px 14px;margin:8px 0;background:rgba(255,255,255,.02);border-radius:0 8px 8px 0;cursor:pointer;transition:.15s}.artifact-item:hover{background:rgba(0,255,204,.08)}.artifact-item.active{background:rgba(0,255,204,.12);border-left-color:var(--gr)}
+    .artifact-meta{font-size:10px;color:var(--t3);margin-bottom:4px;display:flex;justify-content:space-between}
+    .artifact-name{font-size:12px;font-weight:600;color:var(--t);margin-bottom:2px}
+    .artifact-preview{font-size:11px;color:var(--t3);line-height:1.5;max-height:60px;overflow:hidden}
+    @keyframes fi{from{opacity:0;transform:translateY(8px)}}@media(max-width:900px){#shell{grid-template-columns:1fr}#artifact-panel{display:none}}
+    .code-block{background:rgba(0,0,0,.3);border:1px solid var(--b);border-radius:8px;padding:12px;font-family:'JetBrains Mono','Fira Code',monospace;font-size:12px;overflow-x:auto;color:var(--t2);line-height:1.6}
+    .artifact-type{font-size:9px;padding:2px 6px;border-radius:4px;background:var(--b);color:var(--t3);text-transform:uppercase;letter-spacing:.05em}
+    .artifact-type.code{background:rgba(68,153,255,.15);color:var(--bl)}.artifact-type.web{background:rgba(0,204,136,.15);color:var(--gr)}.artifact-type.data{background:rgba(187,119,255,.15);color:var(--pu)}
+  </style>
+</head>
+<body>
+<div id="shell">
+  <div id="chat-panel">
+    <div id="topbar">
+      <div class="logo">◈ ABELITO OS</div>
+      <div class="tab on">💬 Chat</div>
+      <div class="tab">📦 Artefactos</div>
+      <div class="spacer"></div>
+      <div class="status" id="api-status">Conectando...</div>
+    </div>
+    <div id="msgs">
+      <div class="msg msg-sys">✨ Chat con Artefactos listo. Escribe código, crea archivos web, o genera contenido que se mostrará en el panel derecho.</div>
+    </div>
+    <div id="input-area">
+      <div id="input-row">
+        <textarea id="msg-in" rows="1" placeholder="Escribe un mensaje... (Shift+Enter para nueva línea)" oninput="autoResize(this)" onkeydown="handleKey(event)"></textarea>
+        <button id="send-btn" onclick="sendMessage()">➤</button>
+      </div>
+      <div id="quick-cmds">
+        <button class="qcmd" onclick="quickCmd('Crea una página HTML interactiva para mostrar datos')">🌐 Crear Web</button>
+        <button class="qcmd" onclick="quickCmd('Genera un componente React funcional')">⚛️ React</button>
+        <button class="qcmd" onclick="quickCmd('Escribe un script Python útil')">🐍 Python</button>
+        <button class="qcmd" onclick="quickCmd('Crea un diagrama SVG animado')">📊 SVG</button>
+        <button class="qcmd" onclick="quickCmd('Genera datos JSON estructurados')">📄 JSON</button>
+        <button class="qcmd" onclick="quickCmd('Dame estado del sistema y capacidades')">📊 Estado</button>
+      </div>
+    </div>
+  </div>
+  
+  <aside id="artifact-panel">
+    <div id="artifact-header">
+      <div id="artifact-title">📦 Artefactos <span id="artifact-count" style="font-weight:400;color:var(--t3)">0</span></div>
+      <div id="artifact-actions">
+        <button class="action-btn" onclick="refreshArtifacts()" title="Actualizar">↻</button>
+        <button class="action-btn" onclick="clearArtifacts()" title="Limpiar">🗑</button>
+        <button class="action-btn" onclick="togglePreview()" title="Vista previa">👁</button>
+      </div>
+    </div>
+    <div id="artifact-list">
+      <div class="artifact-placeholder">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M19.5 14.25v-2.625a3.375 3.375 0 0 0-3.375-3.375h-1.5A1.125 1.125 0 0 1 13.5 7.125v-1.5a3.375 3.375 0 0 0-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 0 0-9-9Z"/></svg>
+        <div style="font-size:12px">Los artefactos aparecerán aquí<br>Código, webs, componentes, datos...</div>
+      </div>
+    </div>
+    <div id="artifact-content">
+      <iframe id="artifact-viewer" style="display:none"></iframe>
+      <div id="artifact-code-viewer" class="artifact-placeholder" style="display:flex">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M17.25 6.75 22.5 12l-5.25 5.25m-10.5 0L1.5 12l5.25-5.25m7.5-3-4.5 18"/></svg>
+        <div style="font-size:12px">Selecciona un artefacto para verlo</div>
+      </div>
+    </div>
+  </aside>
+</div>
+
+<script>
+let artifacts = [];
+let currentArtifact = null;
+let lastWorkflow = null;
+
+async function api(url, options = {}) {
+  const r = await fetch(url, options);
+  const data = await r.json();
+  if (!r.ok) throw new Error(data.detail || JSON.stringify(data));
+  return data;
+}
+
+async function refreshStatus() {
+  try {
+    const h = await api('/health');
+    document.getElementById('api-status').textContent = `API: ${h.status}`;
+    document.getElementById('api-status').style.color = 'var(--gr)';
+  } catch (e) {
+    document.getElementById('api-status').textContent = 'API: Error';
+    document.getElementById('api-status').style.color = 'var(--re)';
+  }
+}
+
+function autoResize(t) {
+  t.style.height = 'auto';
+  t.style.height = Math.min(t.scrollHeight, 120) + 'px';
+}
+
+function handleKey(e) {
+  if (e.key === 'Enter' && !e.shiftKey) {
+    e.preventDefault();
+    sendMessage();
+  }
+}
+
+function quickCmd(text) {
+  const inp = document.getElementById('msg-in');
+  inp.value = text;
+  inp.focus();
+  autoResize(inp);
+}
+
+function addMessage(text, role, metadata = {}) {
+  const container = document.getElementById('msgs');
+  const msg = document.createElement('div');
+  msg.className = `msg msg-${role}`;
+  
+  const hdr = document.createElement('div');
+  hdr.className = 'msg-hdr';
+  hdr.innerHTML = role === 'user' ? '👤 Tú' : '🤖 Abelito OS';
+  msg.appendChild(hdr);
+  
+  const content = document.createElement('div');
+  content.className = 'msg-content';
+  content.textContent = text;
+  msg.appendChild(content);
+  
+  container.appendChild(msg);
+  scrollToBottom();
+  return msg;
+}
+
+function addSystemMessage(text) {
+  const container = document.getElementById('msgs');
+  const msg = document.createElement('div');
+  msg.className = 'msg msg-sys';
+  msg.textContent = text;
+  container.appendChild(msg);
+  scrollToBottom();
+}
+
+function showTyping() {
+  const container = document.getElementById('msgs');
+  const typing = document.createElement('div');
+  typing.className = 'msg msg-a';
+  typing.id = 'typing-indicator';
+  typing.innerHTML = `<div class="msg-hdr">🤖 Abelito OS</div><div class="msg-content"><div class="typing"><span></span><span></span><span></span></div></div>`;
+  container.appendChild(typing);
+  scrollToBottom();
+}
+
+function hideTyping() {
+  const typing = document.getElementById('typing-indicator');
+  if (typing) typing.remove();
+}
+
+function scrollToBottom() {
+  const container = document.getElementById('msgs');
+  container.scrollTop = container.scrollHeight;
+}
+
+async function sendMessage() {
+  const inp = document.getElementById('msg-in');
+  const text = inp.value.trim();
+  if (!text) return;
+  
+  inp.value = '';
+  inp.style.height = 'auto';
+  
+  addMessage(text, 'user');
+  showTyping();
+  
+  try {
+    const response = await api('/v1/message', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        user_id: 'chat-artifacts',
+        text: text,
+        channel: 'web-chat',
+        mode: 'default'
+      })
+    });
+    
+    hideTyping();
+    lastWorkflow = response.workflow_id;
+    
+    const replyText = response.reply || response.detail || 'Procesando...';
+    addMessage(replyText, 'ai');
+    
+    // Detectar y crear artefactos del response
+    if (response.artifacts && Array.isArray(response.artifacts)) {
+      response.artifacts.forEach(art => addArtifact(art));
+    }
+    
+    // Si el response contiene código, crear artefacto automáticamente
+    detectAndCreateArtifact(replyText);
+    
+  } catch (e) {
+    hideTyping();
+    addMessage(`Error: ${e.message}`, 'sys');
+  }
+}
+
+function detectAndCreateArtifact(text) {
+  // Detectar bloques de código
+  const codeBlocks = text.match(/```(\w+)?\n([\s\S]*?)```/g);
+  if (codeBlocks) {
+    codeBlocks.forEach((block, idx) => {
+      const match = block.match(/```(\w+)?\n([\s\S]*?)```/);
+      if (match) {
+        const lang = match[1] || 'text';
+        const code = match[2];
+        addArtifact({
+          id: `artifact-${Date.now()}-${idx}`,
+          name: `${lang.toUpperCase()} Snippet`,
+          type: 'code',
+          language: lang,
+          content: code,
+          createdAt: new Date().toISOString()
+        });
+      }
+    });
+  }
+  
+  // Detectar HTML completo
+  if (text.includes('<!DOCTYPE html>') || text.includes('<html')) {
+    const htmlMatch = text.match(/(<html[\s\S]*?<\/html>|<!DOCTYPE html>[\s\S]*)/i);
+    if (htmlMatch) {
+      addArtifact({
+        id: `artifact-web-${Date.now()}`,
+        name: 'Página Web',
+        type: 'web',
+        content: htmlMatch[1],
+        createdAt: new Date().toISOString()
+      });
+    }
+  }
+  
+  // Detectar JSON
+  try {
+    const jsonMatch = text.match(/\{[\s\S]*\}/);
+    if (jsonMatch) {
+      const parsed = JSON.parse(jsonMatch[0]);
+      addArtifact({
+        id: `artifact-json-${Date.now()}`,
+        name: 'Datos JSON',
+        type: 'data',
+        language: 'json',
+        content: JSON.stringify(parsed, null, 2),
+        createdAt: new Date().toISOString()
+      });
+    }
+  } catch (e) {}
+}
+
+function addArtifact(artifact) {
+  if (!artifact.id) artifact.id = `artifact-${Date.now()}`;
+  if (!artifact.createdAt) artifact.createdAt = new Date().toISOString();
+  
+  artifacts.unshift(artifact);
+  renderArtifactList();
+  updateArtifactCount();
+  
+  // Auto-seleccionar el primer artefacto
+  if (artifacts.length === 1) {
+    selectArtifact(artifact.id);
+  }
+  
+  addSystemMessage(`📦 Artefacto creado: ${artifact.name}`);
+}
+
+function renderArtifactList() {
+  const list = document.getElementById('artifact-list');
+  list.innerHTML = '';
+  
+  if (artifacts.length === 0) {
+    list.innerHTML = `
+      <div class="artifact-placeholder">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M19.5 14.25v-2.625a3.375 3.375 0 0 0-3.375-3.375h-1.5A1.125 1.125 0 0 1 13.5 7.125v-1.5a3.375 3.375 0 0 0-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 0 0-9-9Z"/></svg>
+        <div style="font-size:12px">Los artefactos aparecerán aquí<br>Código, webs, componentes, datos...</div>
+      </div>
+    `;
+    return;
+  }
+  
+  artifacts.forEach(art => {
+    const item = document.createElement('div');
+    item.className = `artifact-item${currentArtifact && currentArtifact.id === art.id ? ' active' : ''}`;
+    item.onclick = () => selectArtifact(art.id);
+    
+    const time = new Date(art.createdAt).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
+    item.innerHTML = `
+      <div class="artifact-meta">
+        <span class="artifact-type ${art.type}">${art.type}</span>
+        <span>${time}</span>
+      </div>
+      <div class="artifact-name">${escapeHtml(art.name)}</div>
+      <div class="artifact-preview">${escapeHtml(art.content.substring(0, 100))}${art.content.length > 100 ? '...' : ''}</div>
+    `;
+    list.appendChild(item);
+  });
+}
+
+function updateArtifactCount() {
+  document.getElementById('artifact-count').textContent = artifacts.length;
+}
+
+function selectArtifact(id) {
+  currentArtifact = artifacts.find(a => a.id === id);
+  if (!currentArtifact) return;
+  
+  renderArtifactList();
+  renderArtifactContent();
+}
+
+function renderArtifactContent() {
+  if (!currentArtifact) return;
+  
+  const viewer = document.getElementById('artifact-viewer');
+  const codeViewer = document.getElementById('artifact-code-viewer');
+  
+  if (currentArtifact.type === 'web') {
+    viewer.style.display = 'block';
+    codeViewer.style.display = 'none';
+    viewer.srcdoc = currentArtifact.content;
+  } else {
+    viewer.style.display = 'none';
+    codeViewer.style.display = 'flex';
+    codeViewer.innerHTML = `
+      <div style="width:100%;max-width:100%;overflow:auto">
+        <div style="font-size:11px;color:var(--t3);margin-bottom:8px">${escapeHtml(currentArtifact.name)} · <span class="artifact-type ${currentArtifact.type}">${currentArtifact.type}</span></div>
+        <pre class="code-block">${escapeHtml(currentArtifact.content)}</pre>
+        <button class="qcmd" onclick="copyArtifact()" style="margin-top:10px">📋 Copiar</button>
+      </div>
+    `;
+  }
+}
+
+function copyArtifact() {
+  if (currentArtifact) {
+    navigator.clipboard.writeText(currentArtifact.content);
+    addSystemMessage('✅ Artefacto copiado al portapapeles');
+  }
+}
+
+function clearArtifacts() {
+  artifacts = [];
+  currentArtifact = null;
+  renderArtifactList();
+  updateArtifactCount();
+  document.getElementById('artifact-viewer').srcdoc = '';
+  document.getElementById('artifact-code-viewer').innerHTML = `
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M17.25 6.75 22.5 12l-5.25 5.25m-10.5 0L1.5 12l5.25-5.25m7.5-3-4.5 18"/></svg>
+    <div style="font-size:12px">Selecciona un artefacto para verlo</div>
+  `;
+  addSystemMessage('🗑 Artefactos limpiados');
+}
+
+function refreshArtifacts() {
+  renderArtifactList();
+  if (currentArtifact) renderArtifactContent();
+  addSystemMessage('↻ Artefactos actualizados');
+}
+
+function togglePreview() {
+  const viewer = document.getElementById('artifact-viewer');
+  const codeViewer = document.getElementById('artifact-code-viewer');
+  if (viewer.style.display === 'none') {
+    if (currentArtifact && currentArtifact.type === 'web') {
+      viewer.style.display = 'block';
+      codeViewer.style.display = 'none';
+      viewer.srcdoc = currentArtifact.content;
+    }
+  } else {
+    viewer.style.display = 'none';
+    codeViewer.style.display = 'flex';
+    renderArtifactContent();
+  }
+}
+
+function escapeHtml(text) {
+  return String(text).replace(/[&<>"']/g, m => ({
+    '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+  }[m]));
+}
+
+// Inicializar
+refreshStatus();
+setInterval(refreshStatus, 15000);
+</script>
+</body>
+</html>
