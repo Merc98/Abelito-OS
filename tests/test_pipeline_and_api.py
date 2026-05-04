@@ -67,7 +67,7 @@ class TestPipelineAndAPI(unittest.IsolatedAsyncioTestCase):
         self.assertTrue(result.accepted)
         self.assertEqual(result.status, "QUEUED")
         assert ceo_api._nats is not None
-        self.assertEqual(ceo_api._nats.messages[0][0], "abel.tasks.short.ceo.classify")
+        self.assertEqual(ceo_api._nats.messages[0][0], "abel.tasks.request.operations")
 
     async def test_dashboard_file_is_available(self) -> None:
         response = await ceo_api.dashboard()
