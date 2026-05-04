@@ -33,7 +33,7 @@ async def simulate_ceo_api_flow() -> None:
     response = await ceo_api.ingest_message(msg)
     assert response.accepted is True
     assert response.status == "QUEUED"
-    assert ceo_api._nats.messages[0][0] == "abel.tasks.short.ceo.classify"
+    assert ceo_api._nats.messages[0][0] == "abel.tasks.request.operations"
 
     osint_req = OsintRequest(
         target="jane.doe@example.com",
@@ -45,7 +45,7 @@ async def simulate_ceo_api_flow() -> None:
     osint_response = await ceo_api.start_osint(osint_req)
     assert osint_response.accepted is True
     assert osint_response.status == "QUEUED"
-    assert ceo_api._nats.messages[1][0] == "abel.tasks.short.osint.start"
+    assert ceo_api._nats.messages[3][0] == "abel.tasks.short.osint.start"
 
     snapshot = await ceo_api.memory_snapshot(osint_response.workflow_id)
     assert snapshot["workflow_id"] == osint_response.workflow_id
