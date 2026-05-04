@@ -11,8 +11,11 @@ from typing import Any
 
 from fastapi import Depends, FastAPI, HTTPException, WebSocket, WebSocketDisconnect
 from fastapi.responses import FileResponse
+from pydantic import BaseModel, Field
 
 from core.memory import MemoryCore
+from core.native_tools import NativeTools
+from core.response_compressor import response_compressor
 from shared.nats_client import connect_nats_from_env
 from shared.auth import require_auth
 from shared.schemas import CEOMessage, OsintRequest, TaskEnvelope, WorkflowResponse
@@ -23,11 +26,43 @@ DASHBOARD_HTML = Path(__file__).resolve().parent / "dashboard" / "index.html"
 
 _nats: Any | None = None
 _memory: MemoryCore | None = None
+_native: NativeTools | None = None
+
+
+class SmartSearchRequest(BaseModel):
+    query: str
+    mode: str = "auto"
+
+
+class WebSearchRequest(BaseModel):
+    query: str
+    engines: list[str] = Field(default_factory=lambda: ["bing", "yahoo", "startpage", "aol"])
+
+
+class LearnRequest(BaseModel):
+    title: str
+    content: str
+    type: str
+    files: list[str]
+    tags: list[str]
+    confidence: float = 0.85
+
+
+class RecallRequest(BaseModel):
+    query: str
+    type: str | None = None
+    mode: str = "auto"
+
+
+class CustomizeRequest(BaseModel):
+    feature_desc: str
+    base_url: str = "http://127.0.0.1:8080"
+    log_path: str = "./logs/server.log"
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    global _nats, _memory
+    global _nats, _memory, _native
     _nats = None
     nats_url = os.getenv("NATS_URL", "nats://localhost:4222")
     try:
@@ -39,12 +74,13 @@ async def lifespan(app: FastAPI):
         logger.warning(f"NATS no disponible ({e}). Ejecutando en modo local sin cola de mensajes.")
         _nats = None
     _memory = MemoryCore(os.getenv("MEMORY_DB_PATH", "./data/abel_memory.db"))
+    _native = NativeTools(".")
     yield
     if _nats and _nats.is_connected:
         await _nats.close()
 
 
-app = FastAPI(title="Abel OS+ CEO API", version="3.3.0", lifespan=lifespan)
+app = FastAPI(title="Abel OS+ CEO API", version="3.4.0", lifespan=lifespan)
 
 
 @app.get("/v1/committees")
@@ -204,3 +240,60 @@ async def memory_snapshot(workflow_id: str) -> dict[str, Any]:
     if not _memory:
         raise HTTPException(status_code=503, detail="memory core unavailable")
     return _memory.reconstruct_workflow(workflow_id)
+
+
+@app.post("/v1/agent/smart-search")
+async def agent_smart_search(req: SmartSearchRequest) -> dict[str, Any]:
+    if not _native:
+        raise HTTPException(status_code=503, detail="native tools unavailable")
+    hits = await _native.smart_search(req.query, req.mode)
+    return {"results": hits}
+
+
+@app.post("/v1/agent/web-search")
+async def agent_web_search(req: WebSearchRequest) -> dict[str, Any]:
+    if not _native:
+        raise HTTPException(status_code=503, detail="native tools unavailable")
+    results = await _native.web_search(req.query, req.engines)
+    return {"results": results}
+
+
+@app.post("/v1/agent/memory/learn")
+async def agent_memory_learn(req: LearnRequest) -> dict[str, Any]:
+    if not _native:
+        raise HTTPException(status_code=503, detail="native tools unavailable")
+    entry_id = _native.learn(req.title, req.content, req.type, req.files, req.tags, req.confidence)
+    return {"id": entry_id}
+
+
+@app.post("/v1/agent/memory/recall")
+async def agent_memory_recall(req: RecallRequest) -> dict[str, Any]:
+    if not _native:
+        raise HTTPException(status_code=503, detail="native tools unavailable")
+    return {"results": await _native.recall(req.query, req.type, req.mode)}
+
+
+@app.post("/v1/agent/setup")
+async def agent_setup() -> dict[str, Any]:
+    if not _native:
+        raise HTTPException(status_code=503, detail="native tools unavailable")
+    return _native.agent_setup()
+
+
+@app.post("/v1/agent/deploy")
+async def agent_deploy(base_url: str = "http://127.0.0.1:8080", log_path: str = "./logs/server.log") -> dict[str, Any]:
+    if not _native:
+        raise HTTPException(status_code=503, detail="native tools unavailable")
+    return await _native.agent_deploy(base_url=base_url, log_path=log_path)
+
+
+@app.post("/v1/agent/customize")
+async def agent_customize(req: CustomizeRequest) -> dict[str, Any]:
+    if not _native:
+        raise HTTPException(status_code=503, detail="native tools unavailable")
+    return await _native.agent_customize(req.feature_desc, req.base_url, req.log_path)
+
+
+@app.post("/v1/agent/compress")
+async def agent_compress(data: str, max_tokens: int = 2000) -> dict[str, str]:
+    return {"compressed": response_compressor(data, max_tokens=max_tokens)}
