@@ -1,10 +1,9 @@
 from __future__ import annotations
 
+import asyncio
 import os
 import uuid
 import logging
-import inspect
-import asyncio
 from contextlib import asynccontextmanager
 from pathlib import Path
 from typing import Any
@@ -23,6 +22,7 @@ from .committees import COMMITTEES, select_committee, build_chat_reply
 
 logger = logging.getLogger("abel.ceo_api")
 DASHBOARD_HTML = Path(__file__).resolve().parent / "dashboard" / "index.html"
+CHAT_HTML = Path(__file__).resolve().parent / "chat" / "index.html"
 
 _nats: Any | None = None
 _memory: MemoryCore | None = None
@@ -69,9 +69,9 @@ async def lifespan(app: FastAPI):
         async def try_connect():
             return await connect_nats_from_env(nats_url)
         _nats = await asyncio.wait_for(try_connect(), timeout=3.0)
-        logger.info(f"NATS conectado exitosamente en {nats_url}")
+        logger.info(f"NATS conectado en {nats_url}")
     except Exception as e:
-        logger.warning(f"NATS no disponible ({e}). Ejecutando en modo local sin cola de mensajes.")
+        logger.warning(f"NATS no disponible ({e}). Modo local activo.")
         _nats = None
     _memory = MemoryCore(os.getenv("MEMORY_DB_PATH", "./data/abel_memory.db"))
     _native = NativeTools(".")
@@ -80,7 +80,7 @@ async def lifespan(app: FastAPI):
         await _nats.close()
 
 
-app = FastAPI(title="Abel OS+ CEO API", version="3.4.0", lifespan=lifespan)
+app = FastAPI(title="Abel OS+ CEO API", version="3.5.0", lifespan=lifespan)
 
 
 @app.get("/v1/committees")
@@ -91,15 +91,12 @@ async def list_committees() -> dict[str, Any]:
 @app.post("/task/route")
 async def route_task(task: CEOMessage):
     from shared.agent_modes import get_mode
-
     try:
         mode = get_mode(task.mode)
     except KeyError as exc:
         raise HTTPException(status_code=400, detail=str(exc))
-
     committee_id = select_committee(task.text)
     committee = COMMITTEES[committee_id]
-
     return {
         "status": "ROUTED",
         "committee": committee_id,
@@ -122,17 +119,21 @@ async def dashboard() -> FileResponse:
     return FileResponse(DASHBOARD_HTML)
 
 
+@app.get("/chat")
+async def chat_ui() -> FileResponse:
+    if not CHAT_HTML.exists():
+        raise HTTPException(status_code=404, detail="chat unavailable")
+    return FileResponse(CHAT_HTML)
+
+
 @app.post("/v1/message", response_model=WorkflowResponse)
 async def ingest_message(msg: CEOMessage) -> WorkflowResponse:
     workflow_id = f"wf-{uuid.uuid4()}"
-
     chat_reply = build_chat_reply(workflow_id, msg.text)
-
     dispatch_receipts = []
 
     for task in chat_reply["tasks"]:
         subject = f"abel.tasks.request.{task['committee']}"
-
         if _nats:
             envelope = TaskEnvelope(
                 task_id=task["task_id"],
@@ -146,34 +147,22 @@ async def ingest_message(msg: CEOMessage) -> WorkflowResponse:
             status = "DISPATCHED"
         else:
             status = "SKIPPED_NO_NATS"
-
-        dispatch_receipts.append({
-            "task_id": task["task_id"],
-            "subject": subject,
-            "status": status,
-        })
+        dispatch_receipts.append({"task_id": task["task_id"], "subject": subject, "status": status})
 
     if _memory:
         _memory.record_event(
-            workflow_id,
-            "ceo-api",
-            "QUEUED",
+            workflow_id, "ceo-api", "QUEUED",
             {
-                "user_id": msg.user_id,
-                "channel": msg.channel,
-                "text": msg.text,
-                "committee": chat_reply["committee"],
-                "agents": chat_reply["agents"],
+                "user_id": msg.user_id, "channel": msg.channel, "text": msg.text,
+                "committee": chat_reply["committee"], "agents": chat_reply["agents"],
                 "task_ids": [t["task_id"] for t in chat_reply["tasks"]],
                 "dispatch_receipts": dispatch_receipts,
             },
         )
 
     return WorkflowResponse(
-        workflow_id=workflow_id,
-        accepted=True,
-        status="QUEUED",
-        detail="Workflow aceptado; tasks despachadas por comité.",
+        workflow_id=workflow_id, accepted=True, status="QUEUED",
+        detail="Workflow aceptado; tasks despachadas por comite.",
         reply=chat_reply["reply"],
         committee=chat_reply["committee"],
         committee_name=chat_reply["committee_name"],
@@ -186,14 +175,9 @@ async def ingest_message(msg: CEOMessage) -> WorkflowResponse:
 @app.post("/v1/osint/start", response_model=WorkflowResponse)
 async def start_osint(req: OsintRequest) -> WorkflowResponse:
     if req.mode == "AUTO" and req.target_type in {"phone", "plate", "image"}:
-        raise HTTPException(
-            status_code=400,
-            detail="AUTO mode is disabled for sensitive target types. Use RECOMMEND_ONLY.",
-        )
-
+        raise HTTPException(status_code=400, detail="AUTO mode deshabilitado para target types sensibles. Usa RECOMMEND_ONLY.")
     if not _nats:
         raise HTTPException(status_code=503, detail="NATS no disponible")
-
     workflow_id = f"wf-{uuid.uuid4()}"
     task = TaskEnvelope(
         task_id=f"task-{uuid.uuid4()}",
@@ -204,18 +188,10 @@ async def start_osint(req: OsintRequest) -> WorkflowResponse:
         success_quorum=1,
         late_result_policy="attach_to_audit",
     )
-
     await _nats.publish(task.subject, task.model_dump_json().encode("utf-8"))
-
     if _memory:
         _memory.record_event(workflow_id, "ceo-api", "QUEUED", {"target_type": req.target_type})
-
-    return WorkflowResponse(
-        workflow_id=workflow_id,
-        accepted=True,
-        status="QUEUED",
-        detail="OSINT workflow queued.",
-    )
+    return WorkflowResponse(workflow_id=workflow_id, accepted=True, status="QUEUED", detail="OSINT workflow queued.")
 
 
 @app.websocket("/v1/ws/workflow/{workflow_id}")
@@ -225,7 +201,6 @@ async def workflow_updates(websocket: WebSocket, workflow_id: str):
         await websocket.send_json({"error": "memory core unavailable"})
         await websocket.close()
         return
-
     try:
         while True:
             snapshot = _memory.reconstruct_workflow(workflow_id)

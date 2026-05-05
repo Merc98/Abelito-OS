@@ -46,9 +46,9 @@ services:
 
   abel-core:
     build: .
-    command: uvicorn abel_os.main:app --host 0.0.0.0 --port 8080
+    command: uvicorn abel_os.main:app --host 0.0.0.0 --port 8081
     ports:
-      - "8080:8080"
+      - "8081:8081"
     environment:
       ABEL_ENVIRONMENT: dev
       ABEL_MOBILE_MODE: RECOMMEND_ONLY
@@ -75,8 +75,11 @@ services:
       dockerfile: apps/worker/Dockerfile
     environment:
       NATS_URL: nats://nats:4222
+      MEMORY_DB_PATH: /app/data/abel_memory.db
     depends_on:
       - nats
+    volumes:
+      - abel_data:/app/data
 
   osint-orchestrator:
     build:

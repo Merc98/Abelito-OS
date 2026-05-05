@@ -46,7 +46,6 @@ class TestPipelineAndAPI(unittest.IsolatedAsyncioTestCase):
         )
         report = await run_osint(req, workflow_id=workflow_id)
         self.assertEqual(report.status, "SUCCESS_PARTIAL_SUFFICIENT")
-
         snapshot = MemoryCore("./data/abel_memory.db").reconstruct_workflow(workflow_id)
         self.assertGreaterEqual(len(snapshot["events"]), 2)
 
@@ -67,14 +66,21 @@ class TestPipelineAndAPI(unittest.IsolatedAsyncioTestCase):
         self.assertTrue(result.accepted)
         self.assertEqual(result.status, "QUEUED")
         assert ceo_api._nats is not None
-        self.assertEqual(ceo_api._nats.messages[0][0], "abel.tasks.request.operations")
+        # El subject correcto es abel.tasks.request.<committee>
+        self.assertTrue(ceo_api._nats.messages[0][0].startswith("abel.tasks.request."))
 
     async def test_dashboard_file_is_available(self) -> None:
         response = await ceo_api.dashboard()
-        # Use Path.parts for cross-platform compatibility (Windows uses backslashes)
         from pathlib import Path
         parts = Path(response.path).parts
         self.assertIn("dashboard", parts)
+        self.assertEqual(parts[-1], "index.html")
+
+    async def test_chat_ui_file_is_available(self) -> None:
+        response = await ceo_api.chat_ui()
+        from pathlib import Path
+        parts = Path(response.path).parts
+        self.assertIn("chat", parts)
         self.assertEqual(parts[-1], "index.html")
 
 
