@@ -6,6 +6,7 @@ def load_suite_registries() -> dict[str, object]:
     loaded = {}
     root = Path(__file__).parent
     for mod in root.rglob('*_registry.py'):
-        name = '.'.join(mod.with_suffix('').parts)
+        rel = mod.with_suffix("").relative_to(root.parent)
+        name = ".".join(rel.parts)
         loaded[name] = import_module(name)
     return loaded
