@@ -125,25 +125,10 @@ class MobileAPIHandler(SimpleHTTPRequestHandler):
                     response_data = {'success': False, 'message': 'SSID requerido'}
             
             elif endpoint == 'execute_command':
-                command = data.get('command', '')
-                if command:
-                    # Ejecutar comando de forma segura (sandbox)
-                    result = subprocess.run(
-                        command.split(),
-                        capture_output=True,
-                        text=True,
-                        timeout=30,
-                        cwd=str(BASE_DIR)
-                    )
-                    response_data = {
-                        'success': result.returncode == 0,
-                        'stdout': result.stdout,
-                        'stderr': result.stderr,
-                        'returncode': result.returncode
-                    }
-                else:
-                    response_data = {'success': False, 'message': 'Comando requerido'}
-            
+                # Arbitrary remote process execution is not a supported API capability.
+                self.send_error(403, "Remote command execution disabled")
+                return
+
             elif endpoint == 'save_network':
                 from apps.mobile_runtime.network_manager import MobileRuntime
                 runtime = MobileRuntime()
