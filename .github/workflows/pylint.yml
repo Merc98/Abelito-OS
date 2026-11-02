@@ -1,1 +1,20 @@
-
+name: Python validation
+on:
+  push:
+  pull_request:
+jobs:
+  tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install dependencies
+        run: python -m pip install -r requirements.txt pytest
+      - name: Compile Python sources
+        run: python -m compileall -q app apps core shared abel_os tests
+      - name: Run tests
+        env:
+          ABEL_JWT_SECRET: ci-only-secret-must-be-longer-than-thirty-two-characters
+        run: python -m pytest -q
