@@ -35,13 +35,13 @@ class WorkflowOrchestrator:
             asyncio.create_task(provider()): provider_name
             for provider_name, provider in providers.items()
         }
-        timeout_seconds = lane.deadline_hard_ms / 1000
+        deadline = asyncio.get_running_loop().time() + lane.deadline_hard_ms / 1000
 
         try:
             while tasks and not workflow.closed:
                 done, pending = await asyncio.wait(
                     tasks.keys(),
-                    timeout=timeout_seconds,
+                    timeout=max(0, deadline - asyncio.get_running_loop().time()),
                     return_when=asyncio.FIRST_COMPLETED,
                 )
                 if not done:
@@ -60,7 +60,13 @@ class WorkflowOrchestrator:
                     break
 
                 for task in done:
-                    result = await task
+                    try:
+                        result = await task
+                    except Exception:
+                        result = PartialResult(
+                            source=tasks[task], status=TaskStatus.FAILED,
+                            confidence=0.0, usable_for_decision=False,
+                        )
                     workflow.partial_results.append(result)
                     self._close_if_sufficient(workflow)
                     tasks.pop(task, None)
@@ -79,7 +85,12 @@ class WorkflowOrchestrator:
                         )
                     break
         finally:
-            return workflow
+            for task in tasks:
+                if not task.done():
+                    task.cancel()
+            if tasks:
+                await asyncio.gather(*tasks, return_exceptions=True)
+        return workflow
 
     def _close_if_sufficient(self, workflow: WorkflowState) -> None:
         if workflow.closed:

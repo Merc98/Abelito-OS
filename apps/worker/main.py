@@ -17,8 +17,8 @@ def _result_for(task: TaskEnvelope) -> dict[str, Any]:
         "workflow_id": task.workflow_id,
         "agent": payload.get("agent", "worker"),
         "committee": payload.get("committee", "unknown"),
-        "status": "COMPLETED",
-        "summary": "Accepted and processed by generic committee worker.",
+        "status": "NOT_IMPLEMENTED",
+        "summary": "No task executor is configured; task was received but not executed.",
     }
 
 
@@ -48,13 +48,13 @@ async def run() -> None:
         memory.record_event(
             task.workflow_id,
             result["agent"],
-            "COMPLETED",
+            "NOT_IMPLEMENTED",
             result,
         )
 
         result_subject = f"abel.tasks.result.{task.workflow_id}"
         await nc.publish(result_subject, json.dumps(result).encode("utf-8"))
-        print(f"[worker] completed task={task.task_id} wf={task.workflow_id} subject={msg.subject}")
+        print(f"[worker] not_implemented task={task.task_id} wf={task.workflow_id} subject={msg.subject}")
 
     async def handle_result(msg) -> None:  # type: ignore[no-untyped-def]
         print(f"[worker] result={msg.subject} payload={msg.data.decode('utf-8')[:240]}")
