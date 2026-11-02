@@ -15,7 +15,9 @@ from fastapi import Header, HTTPException
 
 # ── Constants ──────────────────────────────────────────────────────────────────
 
-JWT_SECRET = os.getenv("ABEL_JWT_SECRET", "abel-os-dev-secret-change-in-production")
+JWT_SECRET = os.getenv("ABEL_JWT_SECRET", "")
+if not JWT_SECRET or len(JWT_SECRET) < 32:
+    raise RuntimeError("ABEL_JWT_SECRET must be configured with at least 32 characters")
 JWT_ALGORITHM = "HS256"
 TOKEN_EXPIRY_SECONDS = int(os.getenv("ABEL_TOKEN_EXPIRY", "86400"))  # 24h default
 
@@ -87,6 +89,9 @@ def verify_token(token: str) -> TokenPayload:
     if not hmac.compare_digest(parts[2], expected_sig):
         raise ValueError("Invalid token signature")
 
+    header_json = json.loads(_b64url_decode(parts[0]))
+    if header_json.get("alg") != JWT_ALGORITHM or header_json.get("typ") != "JWT":
+        raise ValueError("Invalid token header")
     payload_json = json.loads(_b64url_decode(parts[1]))
     if payload_json.get("exp", 0) < time.time():
         raise ValueError("Token expired")
