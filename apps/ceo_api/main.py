@@ -83,12 +83,12 @@ async def lifespan(app: FastAPI):
 app = FastAPI(title="Abel OS+ CEO API", version="3.5.0", lifespan=lifespan)
 
 
-@app.get("/v1/committees")
+@app.get("/v1/committees", dependencies=[Depends(require_auth)])
 async def list_committees() -> dict[str, Any]:
     return COMMITTEES
 
 
-@app.post("/task/route")
+@app.post("/task/route", dependencies=[Depends(require_auth)])
 async def route_task(task: CEOMessage):
     from shared.agent_modes import get_mode
     try:
@@ -126,7 +126,7 @@ async def chat_ui() -> FileResponse:
     return FileResponse(CHAT_HTML)
 
 
-@app.post("/v1/message", response_model=WorkflowResponse)
+@app.post("/v1/message", response_model=WorkflowResponse, dependencies=[Depends(require_auth)])
 async def ingest_message(msg: CEOMessage) -> WorkflowResponse:
     workflow_id = f"wf-{uuid.uuid4()}"
     chat_reply = build_chat_reply(workflow_id, msg.text)
@@ -172,7 +172,7 @@ async def ingest_message(msg: CEOMessage) -> WorkflowResponse:
     )
 
 
-@app.post("/v1/osint/start", response_model=WorkflowResponse)
+@app.post("/v1/osint/start", response_model=WorkflowResponse, dependencies=[Depends(require_auth)])
 async def start_osint(req: OsintRequest) -> WorkflowResponse:
     if req.mode == "AUTO" and req.target_type in {"phone", "plate", "image"}:
         raise HTTPException(status_code=400, detail="AUTO mode deshabilitado para target types sensibles. Usa RECOMMEND_ONLY.")
@@ -196,6 +196,12 @@ async def start_osint(req: OsintRequest) -> WorkflowResponse:
 
 @app.websocket("/v1/ws/workflow/{workflow_id}")
 async def workflow_updates(websocket: WebSocket, workflow_id: str):
+    authorization = websocket.headers.get("authorization", "")
+    try:
+        require_auth(authorization)
+    except HTTPException:
+        await websocket.close(code=1008)
+        return
     await websocket.accept()
     if not _memory:
         await websocket.send_json({"error": "memory core unavailable"})
@@ -210,14 +216,14 @@ async def workflow_updates(websocket: WebSocket, workflow_id: str):
         return
 
 
-@app.get("/v1/memory/{workflow_id}")
+@app.get("/v1/memory/{workflow_id}", dependencies=[Depends(require_auth)])
 async def memory_snapshot(workflow_id: str) -> dict[str, Any]:
     if not _memory:
         raise HTTPException(status_code=503, detail="memory core unavailable")
     return _memory.reconstruct_workflow(workflow_id)
 
 
-@app.post("/v1/agent/smart-search")
+@app.post("/v1/agent/smart-search", dependencies=[Depends(require_auth)])
 async def agent_smart_search(req: SmartSearchRequest) -> dict[str, Any]:
     if not _native:
         raise HTTPException(status_code=503, detail="native tools unavailable")
@@ -225,7 +231,7 @@ async def agent_smart_search(req: SmartSearchRequest) -> dict[str, Any]:
     return {"results": hits}
 
 
-@app.post("/v1/agent/web-search")
+@app.post("/v1/agent/web-search", dependencies=[Depends(require_auth)])
 async def agent_web_search(req: WebSearchRequest) -> dict[str, Any]:
     if not _native:
         raise HTTPException(status_code=503, detail="native tools unavailable")
@@ -233,7 +239,7 @@ async def agent_web_search(req: WebSearchRequest) -> dict[str, Any]:
     return {"results": results}
 
 
-@app.post("/v1/agent/memory/learn")
+@app.post("/v1/agent/memory/learn", dependencies=[Depends(require_auth)])
 async def agent_memory_learn(req: LearnRequest) -> dict[str, Any]:
     if not _native:
         raise HTTPException(status_code=503, detail="native tools unavailable")
@@ -241,34 +247,34 @@ async def agent_memory_learn(req: LearnRequest) -> dict[str, Any]:
     return {"id": entry_id}
 
 
-@app.post("/v1/agent/memory/recall")
+@app.post("/v1/agent/memory/recall", dependencies=[Depends(require_auth)])
 async def agent_memory_recall(req: RecallRequest) -> dict[str, Any]:
     if not _native:
         raise HTTPException(status_code=503, detail="native tools unavailable")
     return {"results": await _native.recall(req.query, req.type, req.mode)}
 
 
-@app.post("/v1/agent/setup")
+@app.post("/v1/agent/setup", dependencies=[Depends(require_auth)])
 async def agent_setup() -> dict[str, Any]:
     if not _native:
         raise HTTPException(status_code=503, detail="native tools unavailable")
     return _native.agent_setup()
 
 
-@app.post("/v1/agent/deploy")
+@app.post("/v1/agent/deploy", dependencies=[Depends(require_auth)])
 async def agent_deploy(base_url: str = "http://127.0.0.1:8080", log_path: str = "./logs/server.log") -> dict[str, Any]:
     if not _native:
         raise HTTPException(status_code=503, detail="native tools unavailable")
     return await _native.agent_deploy(base_url=base_url, log_path=log_path)
 
 
-@app.post("/v1/agent/customize")
+@app.post("/v1/agent/customize", dependencies=[Depends(require_auth)])
 async def agent_customize(req: CustomizeRequest) -> dict[str, Any]:
     if not _native:
         raise HTTPException(status_code=503, detail="native tools unavailable")
     return await _native.agent_customize(req.feature_desc, req.base_url, req.log_path)
 
 
-@app.post("/v1/agent/compress")
+@app.post("/v1/agent/compress", dependencies=[Depends(require_auth)])
 async def agent_compress(data: str, max_tokens: int = 2000) -> dict[str, str]:
     return {"compressed": response_compressor(data, max_tokens=max_tokens)}
